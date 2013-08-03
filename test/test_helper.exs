@@ -1,4 +1,5 @@
 ExUnit.start()
+
 ExMake.Application.start()
 
 defmodule ExMake.Test.Case do
@@ -47,13 +48,13 @@ defmodule ExMake.Test.Case do
 
             if Enum.empty?(rest), do: rest = ["all"]
 
+            :application.set_env(:exmake, :exmake_event_pid, self())
+
             cfg = ExMake.Config[targets: rest,
                                 options: opts]
 
-            :application.set_env(:exmake, :exmake_event_pid, self())
-
-            proc = Process.whereis(:exmake_worker)
-            ExMake.Worker.work(proc, cfg)
+            ExMake.Coordinator.set_config(ExMake.Coordinator.locate(), cfg)
+            ExMake.Worker.work(ExMake.Worker.locate())
 
             recv = fn(recv, acc) ->
                 receive do

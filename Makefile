@@ -1,5 +1,4 @@
 RM ?= rm
-TIME ?= time
 INSTALL ?= install
 ELIXIR ?= elixir
 MIX ?= mix
@@ -38,6 +37,8 @@ install: ebin/exmake
 	$(INSTALL) -m755 -d $(PREFIX)
 	$(INSTALL) -m755 -d $(PREFIX)/bin
 	$(INSTALL) -m755 ebin/exmake $(PREFIX)/bin
+	$(INSTALL) -m755 -d $(PREFIX)/lib
+	$(INSTALL) -m755 -d $(PREFIX)/lib/exmake
 
 uninstall:
 	$(RM) $(PREFIX)/bin/exmake

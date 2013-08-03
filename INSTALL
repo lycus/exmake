@@ -25,7 +25,6 @@ A number of variables can be set in the environment to override the tools used
 by the makefile:
  
     * RM: The POSIX rm tool.
-    * TIME: the POSIX time tool.
     * INSTALL The POSIX install utility.
     * ELIXIR: The Elixir script runner.
     * MIX: The Mix build tool shipped with Elixir.
