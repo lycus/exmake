@@ -1,0 +1,49 @@
+            == ExMake: Modern Scriptable Make ==
+
+                -- Installation --
+
+ExMake can be built, tested, and installed by invoking a number of Make
+targets. Though the build process uses Mix, you should avoid invoking it
+directly as doing so can interfere with the build.
+
+The available makefile targets are:
+
+    * all: Runs ebin and escript. This is the default target.
+    * ebin: Builds all ExMake modules.
+    * escript: Builds the escriptized ExMake binary. Runs ebin if needed.
+    * test: Runs the ExMake test suite. Runs ebin if needed.
+    * dialyze: Runs Dialyzer on compiled ExMake modules. Runs ebin if needed.
+    * clean: Cleans up the tree (removes compiled modules).
+    * install: Install ExMake to PREFIX. Runs escript if needed.
+    * uninstall: Remove ExMake from PREFIX.
+
+By default, the install and uninstall targets set PREFIX to /usr/local. The
+PREFIX variable can be set on the Make command line to install to a different
+location.
+
+A number of variables can be set in the environment to override the tools used
+by the makefile:
+ 
+    * RM: The POSIX rm tool.
+    * TIME: the POSIX time tool.
+    * INSTALL The POSIX install utility.
+    * ELIXIR: The Elixir script runner.
+    * MIX: The Mix build tool shipped with Elixir.
+    * DIALYZER: The Dialyzer tool from the Erlang suite.
+
+You should not normally have to override these if the tools are present in
+your environment.
+
+To get an escript:
+
+    $ make escript
+
+This places the escript named exmake in the ebin directory. It is completely
+self-contained so it can be moved anywhere and will run fine provided the
+host system it is run on has Erlang installed.
+
+It's a good idea to run the test suite before using ExMake:
+
+    $ make test
+
+If this passes, you should be good to go.

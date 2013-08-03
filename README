@@ -1,0 +1,30 @@
+            == ExMake: Modern Scriptable Make ==
+
+                -- Introduction --
+
+ExMake is a scriptable, dependency-based build system loosely based on the
+principles behind the POSIX Make utility program. It is intended to be a
+full replacement for Make, with much better scripting support and more
+familiar syntax based on the Elixir programming language.
+
+For further information, see:
+
+    * LICENSE
+      - Licensing and copyright information.
+    * COMPATIBILITY
+      - Supported Erlang and Elixir versions, build prerequisites, etc.
+    * INSTALL
+      - Instructions on building and installing ExMake.
+    * AUTHORS
+      - Names and contact information for ExMake developers.
+    * CONTRIBUTING
+      - Notes and guidelines for contributors.
+
+You can reach the ExMake community in several ways:
+
+    * IRC channels
+      - #lycus @ irc.oftc.net
+    * Mailing lists
+      - lycus-announce: http://groups.google.com/group/lycus-announce
+      - lycus-discuss: http://groups.google.com/group/lycus-discuss
+      - lycus-develop: http://groups.google.com/group/lycus-develop

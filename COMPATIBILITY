@@ -1,0 +1,6 @@
+            == ExMake: Modern Scriptable Make ==
+
+                -- Compatibility --
+
+ExMake requires Erlang R16B+ and Elixir 0.10.0+. You will also need GNU Make
+and basic POSIX utilities to build.
