@@ -46,13 +46,13 @@ defmodule ExMake.File do
 
             rule ["foo.o"],
                  ["foo.c"],
-                 [src], [tgt], _ do
+                 [src], [tgt] do
                 shell("${CC} -c #{src} -o #{tgt}")
             end
 
             rule ["my_exe"],
                  ["foo.o", "utils/bar.o"],
-                 srcs, [tgt], _ do
+                 srcs, [tgt] do
                 shell("${CC} #{Enum.join(srcs, " ")} -o #{tgt}")
             end
         end
@@ -64,7 +64,7 @@ defmodule ExMake.File do
 
             rule ["bar.o"],
                  ["bar.c"],
-                 [src], [tgt], _ do
+                 [src], [tgt] do
                 shell("${CC} -c #{src} -o #{tgt}")
             end
         end
@@ -92,7 +92,7 @@ defmodule ExMake.File do
 
             rule ["foo.o"],
                  ["foo.c"],
-                 [src], [tgt], _ do
+                 [src], [tgt] do
                 shell("${CC} -c #{src} -o #{tgt}")
             end
         end
@@ -107,6 +107,26 @@ defmodule ExMake.File do
     The list of source files can be both source code files and intermediary files that
     are produced by other rules. In the latter case, ExMake will invoke the necessary
     rules to produce those files.
+    """
+    defmacro rule(targets, sources, srcs_arg, tgts_arg, [do: block]) do
+        srcs_arg = Macro.escape(srcs_arg)
+        tgts_arg = Macro.escape(tgts_arg)
+        block = Macro.escape(block)
+
+        quote bind_quoted: binding do
+            fn_name = :"rule_#{length(@rules) + 1}_line_#{__ENV__.line()}"
+
+            @doc false
+            def unquote(fn_name)(unquote(srcs_arg),
+                                 unquote(tgts_arg)), do: unquote(block)
+
+            @rules Keyword.put([targets: targets, sources: sources], :recipe, {__MODULE__, fn_name, 2})
+        end
+    end
+
+    @doc """
+    Same as `rule/5`, but receives as a third argument the directory of the
+    script file that the rule is defined in.
     """
     defmacro rule(targets, sources, srcs_arg, tgts_arg, dir_arg, [do: block]) do
         srcs_arg = Macro.escape(srcs_arg)
@@ -160,7 +180,7 @@ defmodule ExMake.File do
 
             phony "all",
                   ["foo.o"],
-                  _, _, _ do
+                  _, _ do
             end
 
             phony "clean",
@@ -171,7 +191,7 @@ defmodule ExMake.File do
 
             rule ["foo.o"],
                  ["foo.c"],
-                 [src], [tgt], _ do
+                 [src], [tgt] do
                 shell("${CC} -c #{src} -o #{tgt}")
             end
         end
@@ -195,6 +215,26 @@ defmodule ExMake.File do
     are produced by other rules. In the latter case, ExMake will invoke the necessary
     rules to produce those files.
     """
+    defmacro phony(name, sources, name_arg, srcs_arg, [do: block]) do
+        name_arg = Macro.escape(name_arg)
+        srcs_arg = Macro.escape(srcs_arg)
+        block = Macro.escape(block)
+
+        quote bind_quoted: binding do
+            fn_name = :"phony_rule_#{length(@phony_rules) + 1}_line_#{__ENV__.line()}"
+
+            @doc false
+            def unquote(fn_name)(unquote(name_arg),
+                                 unquote(srcs_arg)), do: unquote(block)
+
+            @phony_rules Keyword.put([name: name, sources: sources], :recipe, {__MODULE__, fn_name, 2})
+        end
+    end
+
+    @doc """
+    Same as `phony/5`, but receives as a third argument the directory of the
+    script file that the rule is defined in.
+    """
     defmacro phony(name, sources, name_arg, srcs_arg, dir_arg, [do: block]) do
         name_arg = Macro.escape(name_arg)
         srcs_arg = Macro.escape(srcs_arg)
@@ -214,7 +254,7 @@ defmodule ExMake.File do
     end
 
     @doc """
-    Same as `phony_rule/6`, but receives as a fourth argument the list of arguments
+    Same as `phony/6`, but receives as a fourth argument the list of arguments
     passed to ExMake via the `--args` option, if any.
     """
     defmacro phony(name, sources, name_arg, srcs_arg, dir_arg, args_arg, [do: block]) do

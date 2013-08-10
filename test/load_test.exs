@@ -31,7 +31,7 @@ defmodule ExMake.Test.LoadTest do
         s = """
         phony "all",
               [],
-              _, _, _ do
+              _, _ do
         end
         """
 
@@ -46,7 +46,7 @@ defmodule ExMake.Test.LoadTest do
         s = """
         phony "all",
               [],
-              _, _, _ do
+              _, _ do
         end
         """
 

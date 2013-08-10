@@ -36,7 +36,11 @@ defmodule ExMake.Runner do
                 if run do
                     {m, f, a} = rule[:recipe]
 
-                    rule_args = [rule[:sources], arg2, rule[:directory]]
+                    rule_args = [rule[:sources], arg2]
+
+                    if a >= 3 do
+                        rule_args = rule_args ++ [rule[:directory]]
+                    end
 
                     if a >= 4 do
                         args = cfg.options()[:args] || "" |>
