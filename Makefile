@@ -17,7 +17,7 @@ ebin/exmake: ebin/exmake.app
 
 ebin: ebin/exmake.app
 
-ebin/exmake.app: $(wildcard lib/*.ex)
+ebin/exmake.app: $(wildcard lib/*.ex) $(wildcard lib/lib/*.ex)
 	@$(MIX) compile
 
 clean:
