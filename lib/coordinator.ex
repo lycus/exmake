@@ -100,7 +100,7 @@ defmodule ExMake.Coordinator do
             {:enqueue, rule, owner} ->
                 if Set.size(state.jobs()) < state.max_jobs() do
                     # If we have a free job slot, just run it right away.
-                    job = ExMake.Runner.start(self(), rule, owner)
+                    job = ExMake.Runner.start(self(), state.config(), rule, owner)
                     state = state.jobs(Set.put(state.jobs(), {rule, owner, job}))
                 else
                     # No free slot, so schedule the job for later. We'll run it
@@ -115,7 +115,7 @@ defmodule ExMake.Coordinator do
                 # We have a free job slot, so run a job if one is enqueued.
                 case :queue.out(state.queue()) do
                     {{:value, {rule, owner}}, queue} ->
-                        job = ExMake.Runner.start(self(), rule, owner)
+                        job = ExMake.Runner.start(self(), state.config(), rule, owner)
                         state = state.queue(queue).jobs(Set.put(state.jobs(), {rule, owner, job}))
                     {:empty, _} -> :ok
                 end

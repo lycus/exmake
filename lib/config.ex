@@ -14,6 +14,7 @@ defrecord ExMake.Config, targets: [],
     * `loud`: Boolean value indicating whether to print targets and commands.
     * `question`: Boolean value indicating whether to just perform an up-to-date check.
     * `jobs`: Integer value indicating how many concurrent jobs to run.
+    * `args`: String value indicating arguments to be passed to rules.
     """
 
     record_type(targets: [String.t(), ...],
