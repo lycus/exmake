@@ -9,6 +9,11 @@ defmodule ExMake.File do
 
             # ...
         end
+
+    Using this module implicitly imports the following modules:
+
+    * `ExMake.File`
+    * `ExMake.Utils`
     """
 
     @doc false
