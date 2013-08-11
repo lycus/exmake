@@ -15,7 +15,7 @@ defmodule ExMake.Application do
         {opts, rest} = parse(args)
 
         if opts[:version] do
-            ExMake.Logger.info("ExMake - 0.0.1")
+            ExMake.Logger.info("ExMake - 0.1.0")
             ExMake.Logger.info("Copyright (C) 2013 The Lycus Foundation")
             ExMake.Logger.info("Available under the terms of the MIT License")
             ExMake.Logger.info("")
