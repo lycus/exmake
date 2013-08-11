@@ -150,7 +150,10 @@ defmodule ExMake.Worker do
             ExMake.Coordinator.enqueue(ExMake.Coordinator.locate(), r)
         end)
 
-        # Wait for all jobs to report back.
+        # Wait for all jobs to report back. This is not the most optimal
+        # approach as we may end up waiting for one job to finish while,
+        # say, 3 other jobs are ready to be enqueued. This really should
+        # be optimized at some point.
         Enum.each(leaves, fn(v) ->
             {ex, rule} = receive do
                 {:exmake_done, r, :ok} -> {nil, r}
