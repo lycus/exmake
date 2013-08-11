@@ -23,7 +23,7 @@ defmodule ExMake.Runner do
                 else
                     Enum.each(rule[:sources], fn(src) ->
                         if !File.exists?(src) do
-                            raise(ExMake.UsageError[description: "No target to make file '#{src}'"])
+                            raise(ExMake.UsageError[description: "No rule to make target '#{src}'"])
                         end
                     end)
 
