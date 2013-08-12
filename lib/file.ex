@@ -39,6 +39,35 @@ defmodule ExMake.File do
         end
     end
 
+    @doc """
+    Similar to `load_lib/2`, but only `require`s the library instead of `import`ing it.
+    """
+    defmacro load_lib_qual(lib, args // []) do
+        quote do
+            lib_mod = Module.concat(ExMake.Lib, unquote(lib))
+
+            ExMake.Libraries.set_lib_args(lib_mod, unquote(args))
+            {:module, _} = Code.ensure_loaded(lib_mod)
+
+            require lib_mod
+        end
+    end
+
+    @doc """
+    Loads a library. A list of arguments can be given if the library needs it. The library
+    is `import`ed after being loaded.
+
+    `lib` must be the library name, e.g. `C` to load the C compiler module. `args` must
+    be a list of arbitrary terms.
+    """
+    defmacro load_lib(lib, args // []) do
+        quote do
+            load_qual(unquote(lib), unquote(args))
+
+            import unquote(lib)
+        end
+    end
+
     @doc %B"""
     Specifies a directory to recurse into.
 
