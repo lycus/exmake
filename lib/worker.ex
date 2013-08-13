@@ -158,20 +158,20 @@ defmodule ExMake.Worker do
             # Process leaves until the graph is empty.
             process_graph(coord, g2, pass_go, pass_end)
 
+            if cfg.options()[:time] do
+                ExMake.Coordinator.apply_timer_fn(coord, fn(session) ->
+                    ExMake.Logger.info(ExMake.Timer.format_session(ExMake.Timer.finish_session(session)))
+
+                    nil
+                end)
+            end
+
             0
         rescue
             ex ->
                 ExMake.Logger.error(ex.message())
                 ExMake.Logger.debug(Exception.format_stacktrace(System.stacktrace()))
                 1
-        end
-
-        if cfg.options()[:time] do
-            ExMake.Coordinator.apply_timer_fn(coord, fn(session) ->
-                ExMake.Logger.info(ExMake.Timer.format_session(ExMake.Timer.finish_session(session)))
-
-                nil
-            end)
         end
 
         {:reply, code, nil}
