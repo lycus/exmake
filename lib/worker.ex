@@ -51,11 +51,26 @@ defmodule ExMake.Worker do
     def handle_call(:work, _, nil) do
         Enum.each(ExMake.Libraries.search_paths(), fn(x) -> ExMake.Libraries.append_path(x) end)
 
-        cfg = ExMake.Coordinator.get_config(ExMake.Coordinator.locate())
+        coord = ExMake.Coordinator.locate()
+        cfg = ExMake.Coordinator.get_config(coord)
+
+        if cfg.options()[:time] do
+            ExMake.Coordinator.apply_timer_fn(coord, fn(_) -> ExMake.Timer.create_session("ExMake Build Process") end)
+
+            pass_go = fn(p) -> ExMake.Coordinator.apply_timer_fn(coord, fn(s) -> ExMake.Timer.start_pass(s, p) end) end
+            pass_end = fn(p) -> ExMake.Coordinator.apply_timer_fn(coord, fn(s) -> ExMake.Timer.end_pass(s, p) end) end
+        else
+            # Makes the code below less ugly.
+            pass_go = fn(_) -> end
+            pass_end = fn(_) -> end
+        end
+
         file = cfg.options()[:file] || "Exmakefile"
 
         code = try do
             mods = ExMake.Loader.load(".", file)
+
+            pass_go.(:sanitize_paths)
 
             # Make paths relative to the ExMake invocation directory.
             rules = List.concat(Enum.map(mods, fn({d, _, m}) ->
@@ -77,13 +92,21 @@ defmodule ExMake.Worker do
                 end)
             end))
 
+            pass_end.(:sanitize_paths)
+
             g = :digraph.new([:acyclic])
+
+            pass_go.(:create_vertices)
 
             # Add the rules to the graph as vertices.
             Enum.each(rules, fn(r) -> :digraph.add_vertex(g, :digraph.add_vertex(g), r) end)
             Enum.each(phony_rules, fn(r) -> :digraph.add_vertex(g, :digraph.add_vertex(g), r) end)
 
+            pass_end.(:create_vertices)
+
             vs = :digraph.vertices(g)
+
+            pass_go.(:create_edges)
 
             # Construct edges from goals to dependencies.
             Enum.each(vs, fn(v) ->
@@ -104,6 +127,10 @@ defmodule ExMake.Worker do
                 end)
             end)
 
+            pass_end.(:create_edges)
+
+            pass_go.(:locate_targets)
+
             # Locate the targets we care about.
             tasks = Enum.map(cfg.targets(), fn(tgt) ->
                 rule = ExMake.Helpers.get_target(g, tgt)
@@ -115,15 +142,21 @@ defmodule ExMake.Worker do
                 rule
             end)
 
+            pass_end.(:locate_targets)
+
             # Turn them into vertices.
             verts = Enum.map(tasks, fn({v, _}) -> v end)
+
+            pass_go.(:minimize_graph)
 
             # Eliminate everything else in the graph.
             reachable = :digraph_utils.reachable(verts, g)
             g2 = :digraph_utils.subgraph(g, reachable)
 
+            pass_end.(:minimize_graph)
+
             # Process leaves until the graph is empty.
-            process_graph(g2)
+            process_graph(coord, g2, pass_go, pass_end)
 
             0
         rescue
@@ -133,13 +166,27 @@ defmodule ExMake.Worker do
                 1
         end
 
+        if cfg.options()[:time] do
+            ExMake.Coordinator.apply_timer_fn(coord, fn(session) ->
+                ExMake.Logger.info(ExMake.Timer.format_session(ExMake.Timer.finish_session(session)))
+
+                nil
+            end)
+        end
+
         {:reply, code, nil}
     end
 
-    @spec process_graph(digraph()) :: :ok
-    defp process_graph(graph) do
+    @spec process_graph(pid(), digraph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
+    defp process_graph(coord, graph, pass_go, pass_end, n // 0) do
+        pass_go.(:"compute_leaves_#{n}")
+
         # Compute the leaf vertices. These have no outgoing edges.
         leaves = Enum.filter(:digraph.vertices(graph), fn(v) -> :digraph.out_degree(graph, v) == 0 end)
+
+        pass_end.(:"compute_leaves_#{n}")
+
+        pass_go.(:"enqueue_jobs_#{n}")
 
         # Enqueue jobs for all leaves.
         Enum.each(leaves, fn(v) ->
@@ -147,8 +194,12 @@ defmodule ExMake.Worker do
 
             ExMake.Logger.debug("Enqueuing rule: #{inspect(r)}")
 
-            ExMake.Coordinator.enqueue(ExMake.Coordinator.locate(), r)
+            ExMake.Coordinator.enqueue(coord, r)
         end)
+
+        pass_end.(:"enqueue_jobs_#{n}")
+
+        pass_go.(:"wait_jobs_#{n}")
 
         # Wait for all jobs to report back. This is not the most optimal
         # approach as we may end up waiting for one job to finish while,
@@ -172,7 +223,9 @@ defmodule ExMake.Worker do
             :digraph.del_vertex(graph, v)
         end)
 
+        pass_end.(:"wait_jobs_#{n}")
+
         # Process the next 'wave' of leaf nodes, if any.
-        if :digraph.no_vertices(graph) == 0, do: :ok, else: process_graph(graph)
+        if :digraph.no_vertices(graph) == 0, do: :ok, else: process_graph(coord, graph, pass_go, pass_end, n + 1)
     end
 end

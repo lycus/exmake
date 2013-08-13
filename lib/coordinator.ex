@@ -9,12 +9,14 @@ defmodule ExMake.Coordinator do
     @typep request() :: {:set_cfg, ExMake.Config.t()} |
                         {:get_cfg} |
                         {:enqueue, Keyword.t(), pid()} |
-                        {:done, Keyword.t(), pid(), :ok | tuple()}
+                        {:done, Keyword.t(), pid(), :ok | tuple()} |
+                        {:apply_timer, ((ExMake.Timer.session()) -> ExMake.Timer.session())}
 
     @typep reply() :: {:set_cfg} |
                       {:get_cfg, ExMake.Config.t()} |
                       {:enqueue} |
-                      {:done}
+                      {:done} |
+                      {:apply_timer}
 
     @doc """
     Starts a coordinator process linked to the parent process. Returns
@@ -88,6 +90,21 @@ defmodule ExMake.Coordinator do
         :ok
     end
 
+    @doc """
+    Applies a given function on the `ExMake.Timer` session object. The function
+    receives the session object as its only parameter and must return a new session
+    object.
+
+    `pid` must be the PID of an `ExMake.Coordinator` process. `fun` must be the
+    function to apply on the session object. `timeout` must be `:infinity` or a
+    millisecond value specifying how much time to wait for the operation to complete.
+    """
+    @spec apply_timer_fn(pid(), ((ExMake.Timer.session()) -> ExMake.Timer.session()), timeout()) :: :ok
+    def apply_timer_fn(pid, fun, timeout // :infinity) do
+        :gen_server.call(pid, {:apply_timer, fun}, timeout)
+        :ok
+    end
+
     @doc false
     @spec handle_call(request(), {pid(), term()}, ExMake.State.t()) :: {:reply, reply(), ExMake.State.t()}
     def handle_call(msg, {sender, _}, state) do
@@ -123,6 +140,9 @@ defmodule ExMake.Coordinator do
                 owner <- {:exmake_done, rule, result}
 
                 {:done}
+            {:apply_timer, fun} ->
+                state = state.timing(fun.(state.timing()))
+                {:apply_timer}
         end
 
         {:reply, reply, state}

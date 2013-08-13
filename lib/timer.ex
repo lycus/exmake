@@ -60,19 +60,24 @@ defmodule ExMake.Timer do
     `session` must be a finished session object.
     """
     @spec format_session(finished_session()) :: String.t()
-    def format_session({title, passes}) do
-        sep = "    ===------------------------------------------------------------==="
-        head = "                         #{title}                                     "
-        head2 = "        Time                   Percent Name"
-        sep2 = "        ---------------------- ------- -----------"
+    def format_session(session) do
+        {title, passes} = session
+
+        sep = "    ===--------------------------------------------------------------------------------==="
+        head = "                                        #{title}"
+        head2 = "        Time                                          Percent    Name"
+        sep2 = "        --------------------------------------------- ---------- ---------------------"
 
         passes = lc {name, {time, perc}} inlist passes do
             msecs = div(time, 1000)
             secs = div(msecs, 1000)
+            mins = div(secs, 60)
+            hours = div(mins, 60)
+            days = div(hours, 24)
 
-            ftime = "#{secs}s #{msecs}ms #{time}us"
+            ftime = "#{days}d | #{hours}h | #{mins}m | #{secs}s | #{msecs}ms | #{time}us"
 
-            :unicode.characters_to_binary(:io_lib.format("        ~-22s ~-7.1f ~w", [ftime, perc, name]))
+            :unicode.characters_to_binary(:io_lib.format("        ~-45s ~-10.1f ~w", [ftime, perc, name]))
         end
 
         "\n" <> sep <> "\n" <> head <> "\n" <> sep <> "\n\n" <> head2 <> "\n" <> sep2 <> "\n" <> Enum.join(Enum.reverse(passes), "\n") <> "\n"

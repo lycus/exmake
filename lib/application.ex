@@ -45,6 +45,7 @@ defmodule ExMake.Application do
             ExMake.Logger.info("    --question, -q                  Exit with 0 if everything is up to date; otherwise, 1.")
             ExMake.Logger.info("    --jobs, -j <jobs [1]>           Run the specified number of concurrent jobs.")
             ExMake.Logger.info("    --args, -a <arguments []>       Specify arguments to pass to rules.")
+            ExMake.Logger.info("    --time, -t                      Print timing information.")
             ExMake.Logger.info("")
         end
 
@@ -77,14 +78,16 @@ defmodule ExMake.Application do
                                              version: :boolean,
                                              loud: :boolean,
                                              question: :boolean,
-                                             jobs: :integer],
+                                             jobs: :integer,
+                                             time: :boolean],
                                   aliases: [h: :help,
                                             v: :version,
                                             f: :file,
                                             l: :loud,
                                             q: :question,
                                             j: :jobs,
-                                            a: :args]])
+                                            a: :args,
+                                            t: :time]])
     end
 
     @doc """

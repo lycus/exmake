@@ -15,6 +15,7 @@ defrecord ExMake.Config, targets: [],
     * `question`: Boolean value indicating whether to just perform an up-to-date check.
     * `jobs`: Integer value indicating how many concurrent jobs to run.
     * `args`: String value indicating arguments to be passed to rules.
+    * `time`: Boolean value indicating whether to print timing information.
     """
 
     record_type(targets: [String.t(), ...],
