@@ -6,8 +6,7 @@ defmodule ExMake.Mixfile do
          version: "0.1.0",
          escript_main_module: ExMake.Application,
          escript_path: Path.join("ebin", "exmake"),
-         escript_emu_args: "%%! -noshell -noinput +B\n",
-         test_coverage: [output: "ebin"]]
+         escript_emu_args: "%%! -noshell -noinput +B\n"]
      end
 
     def application() do
