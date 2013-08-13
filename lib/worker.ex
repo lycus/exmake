@@ -129,34 +129,29 @@ defmodule ExMake.Worker do
 
             pass_end.(:create_edges)
 
-            pass_go.(:locate_targets)
+            # Now create pruned graphs for each target and process them.
+            Enum.each(cfg.targets(), fn(tgt) ->
+                pass_go.(:locate_target)
 
-            # Locate the targets we care about.
-            tasks = Enum.map(cfg.targets(), fn(tgt) ->
                 rule = ExMake.Helpers.get_target(g, tgt)
+
+                pass_end.(:locate_target)
 
                 if !rule, do: raise(ExMake.UsageError[description: "Target '#{tgt}' not found"])
 
-                ExMake.Logger.debug("Marking requested rule: #{inspect(elem(rule, 1))}")
+                {v, _} = rule
 
-                rule
+                pass_go.(:minimize_graph)
+
+                # Eliminate everything else in the graph.
+                reachable = :digraph_utils.reachable([v], g)
+                g2 = :digraph_utils.subgraph(g, reachable)
+
+                pass_end.(:minimize_graph)
+
+                # Process leaves until the graph is empty.
+                process_graph(coord, g2, pass_go, pass_end)
             end)
-
-            pass_end.(:locate_targets)
-
-            # Turn them into vertices.
-            verts = Enum.map(tasks, fn({v, _}) -> v end)
-
-            pass_go.(:minimize_graph)
-
-            # Eliminate everything else in the graph.
-            reachable = :digraph_utils.reachable(verts, g)
-            g2 = :digraph_utils.subgraph(g, reachable)
-
-            pass_end.(:minimize_graph)
-
-            # Process leaves until the graph is empty.
-            process_graph(coord, g2, pass_go, pass_end)
 
             if cfg.options()[:time] do
                 ExMake.Coordinator.apply_timer_fn(coord, fn(session) ->
