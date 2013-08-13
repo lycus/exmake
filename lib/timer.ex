@@ -3,8 +3,8 @@ defmodule ExMake.Timer do
     Provides convenience functions for timing.
     """
 
-    @opaque session() :: {String.t(), non_neg_integer(), [{atom(), :erlang.timestamp() | non_neg_integer()}]}
-    @opaque finished_session() :: {String.t(), [{atom(), {non_neg_integer(), non_neg_integer()}}]}
+    @opaque session() :: {String.t(), non_neg_integer(), non_neg_integer(), Dict.t()}
+    @opaque finished_session() :: {String.t(), Dict.t()}
 
     @doc """
     Creates a timing session. Returns an opaque session object.
@@ -13,7 +13,7 @@ defmodule ExMake.Timer do
     """
     @spec create_session(String.t()) :: session()
     def create_session(title) do
-        {title, 0, []}
+        {title, 0, 0, HashDict.new()}
     end
 
     @doc """
@@ -22,10 +22,10 @@ defmodule ExMake.Timer do
     `session` must be a session object. `name` must be a binary containing the
     name of this timing pass.
     """
-    @spec start_pass(session(), atom()) :: session()
+    @spec start_pass(session(), String.t()) :: session()
     def start_pass(session, name) do
-        {title, time, passes} = session
-        {title, time, Keyword.put(passes, name, :erlang.now())}
+        {title, time, n, passes} = session
+        {title, time, n, Dict.put(passes, name, {n, :erlang.now()})}
     end
 
     @doc """
@@ -35,11 +35,11 @@ defmodule ExMake.Timer do
     `session` must be a session object with an in-progress pass. `name` must be
     the name given to the `start_pass/2` function previously.
     """
-    @spec end_pass(session(), atom()) :: session()
+    @spec end_pass(session(), String.t()) :: session()
     def end_pass(session, name) do
-        {title, time, passes} = session
-        diff = :timer.now_diff(:erlang.now(), passes[name])
-        {title, time + diff, Keyword.put(passes, name, diff)}
+        {title, time, n, passes} = session
+        diff = :timer.now_diff(:erlang.now(), elem(passes[name], 1))
+        {title, time + diff, n + 1, Dict.update(passes, name, nil, fn({n, _}) -> {n, diff} end)}
     end
 
     @doc """
@@ -49,8 +49,9 @@ defmodule ExMake.Timer do
     """
     @spec finish_session(session()) :: finished_session()
     def finish_session(session) do
-        {title, time, passes} = session
-        {title, Keyword.put((lc {n, t} inlist passes, do: {n, {t, t / time * 100}}), :total, {time, 100.0})}
+        {title, time, n, passes} = session
+        pairs = lc {n, {i, t}} inlist Dict.to_list(passes), do: {i, n, t, t / time * 100}
+        {title, pairs ++ [{n + 1, "Total", time, 100.0}]}
     end
 
     @doc """
@@ -68,7 +69,7 @@ defmodule ExMake.Timer do
         head2 = "        Time                                          Percent    Name"
         sep2 = "        --------------------------------------------- ---------- ---------------------"
 
-        passes = lc {name, {time, perc}} inlist passes do
+        passes = lc {_, name, time, perc} inlist Enum.sort(passes) do
             msecs = div(time, 1000)
             secs = div(msecs, 1000)
             mins = div(secs, 60)
@@ -77,9 +78,11 @@ defmodule ExMake.Timer do
 
             ftime = "#{days}d | #{hours}h | #{mins}m | #{secs}s | #{msecs}ms | #{time}us"
 
-            :unicode.characters_to_binary(:io_lib.format("        ~-45s ~-10.1f ~w", [ftime, perc, name]))
+            :unicode.characters_to_binary(:io_lib.format("        ~-45s ~-10.1f #{name}", [ftime, perc]))
         end
 
-        "\n" <> sep <> "\n" <> head <> "\n" <> sep <> "\n\n" <> head2 <> "\n" <> sep2 <> "\n" <> Enum.join(Enum.reverse(passes), "\n") <> "\n"
+        joined = Enum.join(passes, "\n")
+
+        "\n" <> sep <> "\n" <> head <> "\n" <> sep <> "\n\n" <> head2 <> "\n" <> sep2 <> "\n" <> joined <> "\n"
     end
 end
