@@ -94,7 +94,7 @@ defmodule ExMake.Worker do
                         {_, r2} = :digraph.vertex(g, v2)
 
                         cond do
-                            t = r2[:targets] -> Enum.member?(t, src)
+                            t = r2[:targets] -> t in src
                             n = r2[:name] -> n == src
                             true -> false
                         end
