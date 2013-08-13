@@ -12,13 +12,7 @@ defmodule ExMake.Application do
     """
     @spec main([String.t()]) :: no_return()
     def main(args) do
-        {opts, rest, inv} = parse(args)
-
-        Enum.each(inv, fn({opt, val}) ->
-            ExMake.Logger.error("Invalid value '#{val}' for option '--#{opt}'")
-
-            System.halt(1)
-        end)
+        {opts, rest} = parse(args)
 
         if opts[:version] do
             ExMake.Logger.info("ExMake - 0.1.0")
@@ -62,12 +56,12 @@ defmodule ExMake.Application do
     end
 
     @doc """
-    Parses the given command line arguments into an `{options, rest, invalid}`
-    pair and returns it.
+    Parses the given command line arguments into an `{options, rest}` pair
+    and returns it.
 
     `args` must be a list of binaries containing the command line arguments.
     """
-    @spec parse([String.t()]) :: {Keyword.t(), [String.t()], Keyword.t()}
+    @spec parse([String.t()]) :: {Keyword.t(), [String.t()]}
     def parse(args) do
         OptionParser.parse(args, [switches: [help: :boolean,
                                              version: :boolean,
