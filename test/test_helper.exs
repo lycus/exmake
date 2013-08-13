@@ -44,7 +44,10 @@ defmodule ExMake.Test.Case do
 
     def execute_in(path, args // []) do
         File.cd!(path, fn() ->
-            {opts, rest} = ExMake.Application.parse(args)
+            tup = ExMake.Application.parse(args)
+
+            opts = elem(tup, 0)
+            rest = elem(tup, 1)
 
             if Enum.empty?(rest), do: rest = ["all"]
 

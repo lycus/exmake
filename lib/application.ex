@@ -12,7 +12,11 @@ defmodule ExMake.Application do
     """
     @spec main([String.t()]) :: no_return()
     def main(args) do
-        {opts, rest, inv} = parse(args)
+        tup = parse(args)
+
+        opts = elem(tup, 0)
+        rest = elem(tup, 1)
+        inv = if tuple_size(tup) >= 3, do: elem(tup, 2), else: []
 
         Enum.each(inv, fn({opt, val}) ->
             ExMake.Logger.error("Invalid value '#{val}' for option '--#{opt}'")
