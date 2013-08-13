@@ -70,7 +70,7 @@ defmodule ExMake.Worker do
         code = try do
             mods = ExMake.Loader.load(".", file)
 
-            pass_go.(:sanitize_paths)
+            pass_go.("Sanitize Rule Paths")
 
             # Make paths relative to the ExMake invocation directory.
             rules = List.concat(Enum.map(mods, fn({d, _, m}) ->
@@ -82,6 +82,10 @@ defmodule ExMake.Worker do
                 end)
             end))
 
+            pass_end.("Sanitize Rule Paths")
+
+            pass_go.("Sanitize Phony Rule Paths")
+
             # Do the same for phony rules.
             phony_rules = List.concat(Enum.map(mods, fn({d, _, m}) ->
                 Enum.map(m.__exmake__(:phony_rules), fn(spec) ->
@@ -92,21 +96,21 @@ defmodule ExMake.Worker do
                 end)
             end))
 
-            pass_end.(:sanitize_paths)
+            pass_end.("Sanitize Phony Rule Paths")
 
             g = :digraph.new([:acyclic])
 
-            pass_go.(:create_vertices)
+            pass_go.("Create DAG Vertices")
 
             # Add the rules to the graph as vertices.
             Enum.each(rules, fn(r) -> :digraph.add_vertex(g, :digraph.add_vertex(g), r) end)
             Enum.each(phony_rules, fn(r) -> :digraph.add_vertex(g, :digraph.add_vertex(g), r) end)
 
-            pass_end.(:create_vertices)
+            pass_end.("Create DAG Vertices")
 
             vs = :digraph.vertices(g)
 
-            pass_go.(:create_edges)
+            pass_go.("Create DAG Edges")
 
             # Construct edges from goals to dependencies.
             Enum.each(vs, fn(v) ->
@@ -127,27 +131,27 @@ defmodule ExMake.Worker do
                 end)
             end)
 
-            pass_end.(:create_edges)
+            pass_end.("Create DAG Edges")
 
             # Now create pruned graphs for each target and process them.
             Enum.each(cfg.targets(), fn(tgt) ->
-                pass_go.(:locate_target)
+                pass_go.("Locate Vertex (#{tgt})")
 
                 rule = ExMake.Helpers.get_target(g, tgt)
 
-                pass_end.(:locate_target)
+                pass_end.("Locate Vertex (#{tgt})")
 
                 if !rule, do: raise(ExMake.UsageError[description: "Target '#{tgt}' not found"])
 
                 {v, _} = rule
 
-                pass_go.(:minimize_graph)
+                pass_go.("Minimize DAG (#{tgt})")
 
                 # Eliminate everything else in the graph.
                 reachable = :digraph_utils.reachable([v], g)
                 g2 = :digraph_utils.subgraph(g, reachable)
 
-                pass_end.(:minimize_graph)
+                pass_end.("Minimize DAG (#{tgt})")
 
                 # Process leaves until the graph is empty.
                 process_graph(coord, g2, pass_go, pass_end)
@@ -174,14 +178,14 @@ defmodule ExMake.Worker do
 
     @spec process_graph(pid(), digraph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
     defp process_graph(coord, graph, pass_go, pass_end, n // 0) do
-        pass_go.(:"compute_leaves_#{n}")
+        pass_go.("Compute Leaves (#{n})")
 
         # Compute the leaf vertices. These have no outgoing edges.
         leaves = Enum.filter(:digraph.vertices(graph), fn(v) -> :digraph.out_degree(graph, v) == 0 end)
 
-        pass_end.(:"compute_leaves_#{n}")
+        pass_end.("Compute Leaves (#{n})")
 
-        pass_go.(:"enqueue_jobs_#{n}")
+        pass_go.("Enqueue Jobs (#{n})")
 
         # Enqueue jobs for all leaves.
         Enum.each(leaves, fn(v) ->
@@ -192,9 +196,9 @@ defmodule ExMake.Worker do
             ExMake.Coordinator.enqueue(coord, r)
         end)
 
-        pass_end.(:"enqueue_jobs_#{n}")
+        pass_end.("Enqueue Jobs (#{n})")
 
-        pass_go.(:"wait_jobs_#{n}")
+        pass_go.("Wait for Jobs (#{n})")
 
         # Wait for all jobs to report back. This is not the most optimal
         # approach as we may end up waiting for one job to finish while,
@@ -218,7 +222,7 @@ defmodule ExMake.Worker do
             :digraph.del_vertex(graph, v)
         end)
 
-        pass_end.(:"wait_jobs_#{n}")
+        pass_end.("Wait for Jobs (#{n})")
 
         # Process the next 'wave' of leaf nodes, if any.
         if :digraph.no_vertices(graph) == 0, do: :ok, else: process_graph(coord, graph, pass_go, pass_end, n + 1)
