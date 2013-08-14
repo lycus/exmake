@@ -153,8 +153,13 @@ defmodule ExMake.Worker do
 
                 pass_end.("Minimize DAG (#{tgt})")
 
-                # Process leaves until the graph is empty.
-                process_graph(coord, g2, pass_go, pass_end)
+                # Process leaves until the graph is empty. If we're running
+                # in --question mode, only check staleness of files.
+                if cfg.options()[:question] do
+                    process_graph_question(coord, g2, pass_go, pass_end)
+                else
+                    process_graph(coord, g2, pass_go, pass_end)
+                end
             end)
 
             if cfg.options()[:time] do
@@ -167,6 +172,10 @@ defmodule ExMake.Worker do
 
             0
         rescue
+            [ExMake.StaleError] ->
+                # This is only raised in --question mode, and just means
+                # means that a rule has stale targets. So simply return 1.
+                1
             ex ->
                 ExMake.Logger.error(ex.message())
                 ExMake.Logger.debug(Exception.format_stacktrace(System.stacktrace()))
@@ -176,7 +185,6 @@ defmodule ExMake.Worker do
         {:reply, code, nil}
     end
 
-    @spec process_graph(pid(), digraph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
     defp process_graph(coord, graph, pass_go, pass_end, n // 0) do
         pass_go.("Compute Leaves (#{n})")
 
@@ -226,5 +234,46 @@ defmodule ExMake.Worker do
 
         # Process the next 'wave' of leaf nodes, if any.
         if :digraph.no_vertices(graph) == 0, do: :ok, else: process_graph(coord, graph, pass_go, pass_end, n + 1)
+    end
+
+    @spec process_graph_question(pid(), digraph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
+    defp process_graph_question(coord, graph, pass_go, pass_end, n // 0) do
+        pass_go.("Compute Leaves (#{n})")
+
+        # Compute the leaf vertices. These have no outgoing edges.
+        leaves = Enum.filter(:digraph.vertices(graph), fn(v) -> :digraph.out_degree(graph, v) == 0 end)
+
+        pass_end.("Compute Leaves (#{n})")
+
+        pass_go.("Check Timestamps (#{n})")
+
+        Enum.each(leaves, fn(v) ->
+            {_, r} = :digraph.vertex(graph, v)
+
+            stale = if r[:name] do
+                ExMake.Logger.warn("'--question' with phony rules is meaningless; they are always considered stale")
+
+                true
+            else
+                Enum.each(r[:sources], fn(src) ->
+                    if !File.exists?(src) do
+                        raise(ExMake.UsageError[description: "No rule to make target '#{src}'"])
+                    end
+                end)
+
+                src_time = Enum.map(r[:sources], fn(src) -> ExMake.Helpers.last_modified(src) end) |> Enum.max()
+                tgt_time = Enum.map(r[:targets], fn(tgt) -> ExMake.Helpers.last_modified(tgt) end) |> Enum.min()
+
+                src_time > tgt_time
+            end
+
+            if stale, do: raise(ExMake.StaleError[rule: r])
+
+            :digraph.del_vertex(graph, v)
+        end)
+
+        pass_end.("Check Timestamps (#{n})")
+
+        if :digraph.no_vertices(graph) == 0, do: :ok, else: process_graph_question(coord, graph, pass_go, pass_end, n + 1)
     end
 end
