@@ -117,17 +117,28 @@ defmodule ExMake.Worker do
                 {_, r} = :digraph.vertex(g, v)
 
                 Enum.each(r[:sources], fn(src) ->
-                    v2 = Enum.find(vs, fn(v2) ->
+                    dep = Enum.find_value(vs, fn(v2) ->
                         {_, r2} = :digraph.vertex(g, v2)
 
                         cond do
-                            t = r2[:targets] -> src in t
-                            n = r2[:name] -> n == src
-                            true -> false
+                            (t = r2[:targets]) && src in t -> {v2, r2}
+                            (n = r2[:name]) && n == src -> {v2, r2}
+                            true -> nil
                         end
                     end)
 
-                    if v2 do
+                    if dep do
+                        {v2, r2} = dep
+
+                        if r[:targets] && (n = r2[:name]) do
+                            r = r |>
+                                Keyword.delete(:recipe) |>
+                                Keyword.delete(:directory) |>
+                                inspect()
+
+                            raise(ExMake.ScriptError[description: "Rule #{r} depends on phony rule '#{n}'"])
+                        end
+
                         case :digraph.add_edge(g, v, v2) do
                             {:error, {:bad_edge, path}} ->
                                 [r1, r2] = [:digraph.vertex(g, hd(path)), :digraph.vertex(g, List.last(path))] |>
