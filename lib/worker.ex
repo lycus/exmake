@@ -70,6 +70,40 @@ defmodule ExMake.Worker do
         code = try do
             mods = ExMake.Loader.load(".", file)
 
+            pass_go.("Check Rule Specifications")
+
+            Enum.each(mods, fn({d, f, m}) ->
+                Enum.each(m.__exmake__(:rules), fn(spec) ->
+                    tgts = spec[:targets]
+                    srcs = spec[:sources]
+                    loc = "#{Path.join(d, f)}:#{elem(spec[:recipe], 3)}"
+
+                    if !is_list(tgts) || Enum.any?(tgts, fn(t) -> !String.valid?(t) end) do
+                        raise(ExMake.ScriptError[description: "#{loc}: Invalid target list; must be a list of strings"])
+                    end
+
+                    if !is_list(srcs) || Enum.any?(srcs, fn(s) -> !String.valid?(s) end) do
+                        raise(ExMake.ScriptError[description: "#{loc}: Invalid source list; must be a list of strings"])
+                    end
+                end)
+
+                Enum.each(m.__exmake__(:phony_rules), fn(spec) ->
+                    name = spec[:name]
+                    srcs = spec[:sources]
+                    loc = "#{Path.join(d, f)}:#{elem(spec[:recipe], 3)}"
+
+                    if !String.valid?(name) do
+                        raise(ExMake.ScriptError[description: "#{loc}: Invalid phony rule name; must be a string"])
+                    end
+
+                    if !is_list(srcs) || Enum.any?(srcs, fn(s) -> !is_binary(s) || !String.valid?(s) end) do
+                        raise(ExMake.ScriptError[description: "#{loc}: Invalid source list; must be a list of strings"])
+                    end
+                end)
+            end)
+
+            pass_end.("Check Rule Specifications")
+
             pass_go.("Sanitize Rule Paths")
 
             # Make paths relative to the ExMake invocation directory.
