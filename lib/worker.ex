@@ -69,156 +69,27 @@ defmodule ExMake.Worker do
 
         code = try do
             mods = ExMake.Loader.load(".", file)
+            files = Enum.map(mods, fn({d, f, _}) -> Path.join(d, f) end)
 
-            pass_go.("Check Rule Specifications")
+            cache = Enum.any?(mods, fn({d, _, m}) -> d == "." && m.__exmake__(:cache) end)
 
-            Enum.each(mods, fn({d, f, m}) ->
-                Enum.each(m.__exmake__(:rules), fn(spec) ->
-                    tgts = spec[:targets]
-                    srcs = spec[:sources]
-                    loc = "#{Path.join(d, f)}:#{elem(spec[:recipe], 3)}"
+            g = if cache && !ExMake.Cache.cache_stale?(files) do
+                ExMake.Cache.load_graph()
+            else
+                g = construct_graph(mods, pass_go, pass_end)
 
-                    if !is_list(tgts) || Enum.any?(tgts, fn(t) -> !String.valid?(t) end) do
-                        raise(ExMake.ScriptError[description: "#{loc}: Invalid target list; must be a list of strings"])
-                    end
+                # If caching is enabled and we got here, that means
+                # no cached files exist or that they're stale. Either
+                # way, create them.
+                if cache, do: ExMake.Cache.save_graph(g)
 
-                    if !is_list(srcs) || Enum.any?(srcs, fn(s) -> !String.valid?(s) end) do
-                        raise(ExMake.ScriptError[description: "#{loc}: Invalid source list; must be a list of strings"])
-                    end
-                end)
-
-                Enum.each(m.__exmake__(:phony_rules), fn(spec) ->
-                    name = spec[:name]
-                    srcs = spec[:sources]
-                    loc = "#{Path.join(d, f)}:#{elem(spec[:recipe], 3)}"
-
-                    if !String.valid?(name) do
-                        raise(ExMake.ScriptError[description: "#{loc}: Invalid phony rule name; must be a string"])
-                    end
-
-                    if !is_list(srcs) || Enum.any?(srcs, fn(s) -> !is_binary(s) || !String.valid?(s) end) do
-                        raise(ExMake.ScriptError[description: "#{loc}: Invalid source list; must be a list of strings"])
-                    end
-                end)
-            end)
-
-            pass_end.("Check Rule Specifications")
-
-            pass_go.("Sanitize Rule Paths")
-
-            # Make paths relative to the ExMake invocation directory.
-            rules = List.concat(Enum.map(mods, fn({d, _, m}) ->
-                Enum.map(m.__exmake__(:rules), fn(spec) ->
-                    tgts = Enum.map(spec[:targets], fn(f) -> Path.join(d, f) end)
-                    srcs = Enum.map(spec[:sources], fn(f) -> Path.join(d, f) end)
-
-                    [targets: tgts, sources: srcs, recipe: spec[:recipe], directory: d]
-                end)
-            end))
-
-            pass_end.("Sanitize Rule Paths")
-
-            pass_go.("Sanitize Phony Rule Paths")
-
-            # Do the same for phony rules.
-            phony_rules = List.concat(Enum.map(mods, fn({d, _, m}) ->
-                Enum.map(m.__exmake__(:phony_rules), fn(spec) ->
-                    name = Path.join(d, spec[:name])
-                    srcs = Enum.map(spec[:sources], fn(f) -> Path.join(d, f) end)
-
-                    [name: name, sources: srcs, recipe: spec[:recipe], directory: d]
-                end)
-            end))
-
-            pass_end.("Sanitize Phony Rule Paths")
-
-            pass_go.("Check Rule Target Lists")
-
-            target_names = rules |>
-                           Enum.map(fn(x) -> x[:targets] end) |>
-                           List.concat()
-
-            target_names = Enum.reduce(target_names, HashSet.new(), fn(n, set) ->
-                if Set.member?(set, n) do
-                    raise(ExMake.ScriptError[description: "Multiple rules mention target '#{n}'"])
-                end
-
-                Set.put(set, n)
-            end)
-
-            pass_end.("Check Rule Target Lists")
-
-            pass_go.("Check Phony Rule Names")
-
-            Enum.each(phony_rules, fn(p) ->
-                if Set.member?(target_names, n = p[:name]) do
-                    raise(ExMake.ScriptError[description: "Phony rule name '#{n}' conflicts with a rule"])
-                end
-            end)
-
-            pass_end.("Check Phony Rule Names")
-
-            g = :digraph.new([:acyclic])
-
-            pass_go.("Create DAG Vertices")
-
-            # Add the rules to the graph as vertices.
-            Enum.each(rules, fn(r) -> :digraph.add_vertex(g, :digraph.add_vertex(g), r) end)
-            Enum.each(phony_rules, fn(r) -> :digraph.add_vertex(g, :digraph.add_vertex(g), r) end)
-
-            pass_end.("Create DAG Vertices")
-
-            vs = :digraph.vertices(g)
-
-            pass_go.("Create DAG Edges")
-
-            # Construct edges from goals to dependencies.
-            Enum.each(vs, fn(v) ->
-                {_, r} = :digraph.vertex(g, v)
-
-                Enum.each(r[:sources], fn(src) ->
-                    dep = Enum.find_value(vs, fn(v2) ->
-                        {_, r2} = :digraph.vertex(g, v2)
-
-                        cond do
-                            (t = r2[:targets]) && src in t -> {v2, r2}
-                            (n = r2[:name]) && n == src -> {v2, r2}
-                            true -> nil
-                        end
-                    end)
-
-                    if dep do
-                        {v2, r2} = dep
-
-                        if r[:targets] && (n = r2[:name]) do
-                            r = r |>
-                                Keyword.delete(:recipe) |>
-                                Keyword.delete(:directory) |>
-                                inspect()
-
-                            raise(ExMake.ScriptError[description: "Rule #{r} depends on phony rule '#{n}'"])
-                        end
-
-                        case :digraph.add_edge(g, v, v2) do
-                            {:error, {:bad_edge, path}} ->
-                                [r1, r2] = [:digraph.vertex(g, hd(path)), :digraph.vertex(g, List.last(path))] |>
-                                           Enum.map(fn(x) -> elem(x, 1) end) |>
-                                           Enum.map(fn(x) -> Keyword.delete(x, :recipe) end) |>
-                                           Enum.map(fn(x) -> Keyword.delete(x, :directory) end) |>
-                                           Enum.map(fn(x) -> inspect(x) end)
-
-                                msg = "Cyclic dependency detected between\n#{r1}\nand\n#{r2}"
-
-                                raise(ExMake.ScriptError[description: msg])
-                            _ -> :ok
-                        end
-                    end
-                end)
-            end)
-
-            pass_end.("Create DAG Edges")
+                g
+            end
 
             # Now create pruned graphs for each target and process them.
+            # We have to do this after loading the cached graph because
+            # the exact layout of the pruned graph depends on the target(s)
+            # given to ExMake on the command line.
             Enum.each(cfg.targets(), fn(tgt) ->
                 pass_go.("Locate Vertex (#{tgt})")
 
@@ -259,7 +130,7 @@ defmodule ExMake.Worker do
         rescue
             [ExMake.StaleError] ->
                 # This is only raised in --question mode, and just means
-                # means that a rule has stale targets. So simply return 1.
+                # that a rule has stale targets. So simply return 1.
                 1
             ex ->
                 ExMake.Logger.error(ex.message())
@@ -270,6 +141,160 @@ defmodule ExMake.Worker do
         {:reply, code, nil}
     end
 
+    @spec construct_graph([{Path.t(), Path.t(), module()}, ...], ((atom()) -> :ok), ((atom()) -> :ok)) :: digraph()
+    defp construct_graph(mods, pass_go, pass_end) do
+        pass_go.("Check Rule Specifications")
+
+        Enum.each(mods, fn({d, f, m}) ->
+            Enum.each(m.__exmake__(:rules), fn(spec) ->
+                tgts = spec[:targets]
+                srcs = spec[:sources]
+                loc = "#{Path.join(d, f)}:#{elem(spec[:recipe], 3)}"
+
+                if !is_list(tgts) || Enum.any?(tgts, fn(t) -> !String.valid?(t) end) do
+                    raise(ExMake.ScriptError[description: "#{loc}: Invalid target list; must be a list of strings"])
+                end
+
+                if !is_list(srcs) || Enum.any?(srcs, fn(s) -> !String.valid?(s) end) do
+                    raise(ExMake.ScriptError[description: "#{loc}: Invalid source list; must be a list of strings"])
+                end
+            end)
+
+            Enum.each(m.__exmake__(:phony_rules), fn(spec) ->
+                name = spec[:name]
+                srcs = spec[:sources]
+                loc = "#{Path.join(d, f)}:#{elem(spec[:recipe], 3)}"
+
+                if !String.valid?(name) do
+                    raise(ExMake.ScriptError[description: "#{loc}: Invalid phony rule name; must be a string"])
+                end
+
+                if !is_list(srcs) || Enum.any?(srcs, fn(s) -> !is_binary(s) || !String.valid?(s) end) do
+                    raise(ExMake.ScriptError[description: "#{loc}: Invalid source list; must be a list of strings"])
+                end
+            end)
+        end)
+
+        pass_end.("Check Rule Specifications")
+
+        pass_go.("Sanitize Rule Paths")
+
+        # Make paths relative to the ExMake invocation directory.
+        rules = List.concat(Enum.map(mods, fn({d, _, m}) ->
+            Enum.map(m.__exmake__(:rules), fn(spec) ->
+                tgts = Enum.map(spec[:targets], fn(f) -> Path.join(d, f) end)
+                srcs = Enum.map(spec[:sources], fn(f) -> Path.join(d, f) end)
+
+                [targets: tgts, sources: srcs, recipe: spec[:recipe], directory: d]
+            end)
+        end))
+
+        pass_end.("Sanitize Rule Paths")
+
+        pass_go.("Sanitize Phony Rule Paths")
+
+        # Do the same for phony rules.
+        phony_rules = List.concat(Enum.map(mods, fn({d, _, m}) ->
+            Enum.map(m.__exmake__(:phony_rules), fn(spec) ->
+                name = Path.join(d, spec[:name])
+                srcs = Enum.map(spec[:sources], fn(f) -> Path.join(d, f) end)
+
+                [name: name, sources: srcs, recipe: spec[:recipe], directory: d]
+            end)
+        end))
+
+        pass_end.("Sanitize Phony Rule Paths")
+
+        pass_go.("Check Rule Target Lists")
+
+        target_names = rules |>
+                       Enum.map(fn(x) -> x[:targets] end) |>
+                       List.concat()
+
+        target_names = Enum.reduce(target_names, HashSet.new(), fn(n, set) ->
+            if Set.member?(set, n) do
+                raise(ExMake.ScriptError[description: "Multiple rules mention target '#{n}'"])
+            end
+
+            Set.put(set, n)
+        end)
+
+        pass_end.("Check Rule Target Lists")
+
+        pass_go.("Check Phony Rule Names")
+
+        Enum.each(phony_rules, fn(p) ->
+            if Set.member?(target_names, n = p[:name]) do
+                raise(ExMake.ScriptError[description: "Phony rule name '#{n}' conflicts with a rule"])
+            end
+        end)
+
+        pass_end.("Check Phony Rule Names")
+
+        g = :digraph.new([:acyclic])
+
+        pass_go.("Create DAG Vertices")
+
+        # Add the rules to the graph as vertices.
+        Enum.each(rules, fn(r) -> :digraph.add_vertex(g, :digraph.add_vertex(g), r) end)
+        Enum.each(phony_rules, fn(r) -> :digraph.add_vertex(g, :digraph.add_vertex(g), r) end)
+
+        pass_end.("Create DAG Vertices")
+
+        vs = :digraph.vertices(g)
+
+        pass_go.("Create DAG Edges")
+
+        # Construct edges from goals to dependencies.
+        Enum.each(vs, fn(v) ->
+            {_, r} = :digraph.vertex(g, v)
+
+            Enum.each(r[:sources], fn(src) ->
+                dep = Enum.find_value(vs, fn(v2) ->
+                    {_, r2} = :digraph.vertex(g, v2)
+
+                    cond do
+                        (t = r2[:targets]) && src in t -> {v2, r2}
+                        (n = r2[:name]) && n == src -> {v2, r2}
+                        true -> nil
+                    end
+                end)
+
+                if dep do
+                    {v2, r2} = dep
+
+                    if r[:targets] && (n = r2[:name]) do
+                        r = r |>
+                            Keyword.delete(:recipe) |>
+                            Keyword.delete(:directory) |>
+                            inspect()
+
+                        raise(ExMake.ScriptError[description: "Rule #{r} depends on phony rule '#{n}'"])
+                    end
+
+                    case :digraph.add_edge(g, v, v2) do
+                        {:error, {:bad_edge, path}} ->
+                            [r1, r2] = [:digraph.vertex(g, hd(path)), :digraph.vertex(g, List.last(path))] |>
+                                       Enum.map(fn(x) -> elem(x, 1) end) |>
+                                       Enum.map(fn(x) -> Keyword.delete(x, :recipe) end) |>
+                                       Enum.map(fn(x) -> Keyword.delete(x, :directory) end) |>
+                                       Enum.map(fn(x) -> inspect(x) end)
+
+                            msg = "Cyclic dependency detected between\n#{r1}\nand\n#{r2}"
+
+                            raise(ExMake.ScriptError[description: msg])
+                        _ -> :ok
+                    end
+                end
+            end)
+        end)
+
+        pass_end.("Create DAG Edges")
+
+        g
+    end
+
+    @spec process_graph(pid(), digraph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
     defp process_graph(coord, graph, pass_go, pass_end, n // 0) do
         pass_go.("Compute Leaves (#{n})")
 
