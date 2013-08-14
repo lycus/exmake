@@ -38,4 +38,22 @@ defmodule ExMake.Helpers do
             end
         end)
     end
+
+    @doc false
+    @spec get_exmake_version() :: String.t()
+    def get_exmake_version() do
+        if Enum.all?(:application.which_applications(), fn({a, _, _}) -> a != :mix end) do
+            Mix.loadpaths()
+        end
+
+        Mix.project()[:version]
+    end
+
+    @doc false
+    @spec get_exmake_version_tuple() :: {non_neg_integer(), non_neg_integer(), non_neg_integer()}
+    def get_exmake_version_tuple() do
+        ver = Mix.Version.parse(get_exmake_version())
+
+        {ver.major(), ver.minor(), ver.patch()}
+    end
 end

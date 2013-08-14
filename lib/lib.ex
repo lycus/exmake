@@ -64,10 +64,11 @@ defmodule ExMake.Lib do
     end
 
     @doc """
-    Sets the version of the library. All components should be non-negative integers.
+    Sets the version tuple of the library. All three version components should be
+    non-negative integers.
     """
-    defmacro version(major, minor, patch) do
-        quote do: @exmake_version {unquote(major), unquote(minor), unquote(patch)}
+    defmacro version(tuple) do
+        quote do: @exmake_version unquote(tuple)
     end
 
     @doc """

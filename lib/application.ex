@@ -5,6 +5,8 @@ defmodule ExMake.Application do
 
     use Application.Behaviour
 
+    @app_version ExMake.Helpers.get_exmake_version()
+
     @doc """
     Runs ExMake from the command line. Returns via `System.halt/1`.
 
@@ -25,7 +27,7 @@ defmodule ExMake.Application do
         end)
 
         if opts[:version] do
-            ExMake.Logger.info("ExMake - 0.1.0")
+            ExMake.Logger.info("ExMake - #{@app_version}")
             ExMake.Logger.info("Copyright (C) 2013 The Lycus Foundation")
             ExMake.Logger.info("Available under the terms of the MIT License")
             ExMake.Logger.info("")
