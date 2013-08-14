@@ -98,12 +98,23 @@ defmodule ExMake.Worker do
 
             pass_end.("Sanitize Phony Rule Paths")
 
-            pass_go.("Check Phony Rule Names")
+            pass_go.("Check Rule Target Lists")
 
             target_names = rules |>
                            Enum.map(fn(x) -> x[:targets] end) |>
-                           List.concat() |>
-                           HashSet.new()
+                           List.concat()
+
+            target_names = Enum.reduce(target_names, HashSet.new(), fn(n, set) ->
+                if Set.member?(set, n) do
+                    raise(ExMake.ScriptError[description: "Multiple rules mention target '#{n}'"])
+                end
+
+                Set.put(set, n)
+            end)
+
+            pass_end.("Check Rule Target Lists")
+
+            pass_go.("Check Phony Rule Names")
 
             Enum.each(phony_rules, fn(p) ->
                 if Set.member?(target_names, n = p[:name]) do
