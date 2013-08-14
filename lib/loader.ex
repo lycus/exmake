@@ -51,6 +51,12 @@ defmodule ExMake.Loader do
         mod = Enum.fetch!(mods, 0)
         rec = mod.__exmake__(:subdirectories)
 
+        Enum.each(rec, fn({sub, _}) ->
+            if String.contains?(sub, ["\\", "/"]) do
+                raise(ExMake.ScriptError[description: "Subdirectory path '#{sub}' contains path separator"])
+            end
+        end)
+
         lists = rec |>
                 Enum.map(fn({d, f}) -> load(Path.join(dir, d), f) end) |>
                 List.flatten()

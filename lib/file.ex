@@ -104,11 +104,11 @@ defmodule ExMake.File do
         end
 
     This can be used to split script files into multiple directories so that they are
-    easier to maintain. It also allows invoking ExMake inside a sub-directory without
+    easier to maintain. It also allows invoking ExMake inside a subdirectory without
     having to build everything from the top-level script file.
 
     Unlike in other Make-style tools, recursion in ExMake does not mean invoking ExMake
-    itself within a sub-directory. Rather, when ExMake is invoked, it collects the full
+    itself within a subdirectory. Rather, when ExMake is invoked, it collects the full
     list of directories to recurse into and includes all rules in those directories
     into the canonical dependency graph.
     """
