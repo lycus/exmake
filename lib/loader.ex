@@ -13,7 +13,7 @@ defmodule ExMake.Loader do
     `dir` must be a path to a directory. `file` must be the name of the
     file to load in `dir`.
     """
-    @spec load(Path.t(), Path.t()) :: [{Path.t(), Path.t(), module()}]
+    @spec load(Path.t(), Path.t()) :: [{Path.t(), Path.t(), module()}, ...]
     def load(dir, file // "Exmakefile") do
         p = Path.join(dir, file)
 
@@ -52,9 +52,21 @@ defmodule ExMake.Loader do
         mod = Enum.fetch!(mods, 0)
         rec = mod.__exmake__(:subdirectories)
 
-        Enum.each(rec, fn({sub, _}) ->
+        Enum.each(rec, fn({sub, file}) ->
+            if !String.valid?(sub) do
+                raise(ExMake.ScriptError[description: "Subdirectory path must be a string"])
+            end
+
+            if !String.valid?(file) do
+                raise(ExMake.ScriptError[description: "Subdirectory file must be a string"])
+            end
+
             if String.contains?(sub, ["\\", "/"]) do
                 raise(ExMake.ScriptError[description: "Subdirectory path '#{sub}' contains path separator"])
+            end
+
+            if String.contains?(file, ["\\", "/"]) do
+                raise(ExMake.ScriptError[description: "Subdirectory file '#{file}' contains path separator"])
             end
         end)
 
