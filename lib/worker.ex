@@ -98,6 +98,21 @@ defmodule ExMake.Worker do
 
             pass_end.("Sanitize Phony Rule Paths")
 
+            pass_go.("Check Phony Rule Names")
+
+            target_names = rules |>
+                           Enum.map(fn(x) -> x[:targets] end) |>
+                           List.concat() |>
+                           HashSet.new()
+
+            Enum.each(phony_rules, fn(p) ->
+                if Set.member?(target_names, n = p[:name]) do
+                    raise(ExMake.ScriptError[description: "Phony rule name '#{n}' conflicts with a rule"])
+                end
+            end)
+
+            pass_end.("Check Phony Rule Names")
+
             g = :digraph.new([:acyclic])
 
             pass_go.("Create DAG Vertices")
