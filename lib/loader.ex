@@ -7,7 +7,8 @@ defmodule ExMake.Loader do
     Loads script file `file` in directory `dir`. Returns a list of
     `{dir, file, mod}` where `mod` is the name of the module containing
     rules and recipes. Raises `ExMake.LoadError` if loading failed for
-    some reason.
+    some reason. Raises `ExMake.ScriptError` if an `ExMake.File.recurse`
+    directive contained an invalid direcory name.
 
     `dir` must be a path to a directory. `file` must be the name of the
     file to load in `dir`.
