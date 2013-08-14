@@ -34,7 +34,7 @@ defmodule ExMake.Runner do
                 end
 
                 if run do
-                    {m, f, a} = rule[:recipe]
+                    {m, f, a, _} = rule[:recipe]
 
                     rule_args = [rule[:sources], arg2]
 

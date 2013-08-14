@@ -148,13 +148,14 @@ defmodule ExMake.File do
         block = Macro.escape(block)
 
         quote bind_quoted: binding do
-            fn_name = :"rule_#{length(@rules) + 1}_line_#{__ENV__.line()}"
+            line = __ENV__.line()
+            fn_name = :"rule_#{length(@rules) + 1}_line_#{line}"
 
             @doc false
             def unquote(fn_name)(unquote(srcs_arg),
                                  unquote(tgts_arg)), do: unquote(block)
 
-            @rules Keyword.put([targets: targets, sources: sources], :recipe, {__MODULE__, fn_name, 2})
+            @rules Keyword.put([targets: targets, sources: sources], :recipe, {__MODULE__, fn_name, 2, line})
         end
     end
 
@@ -169,14 +170,15 @@ defmodule ExMake.File do
         block = Macro.escape(block)
 
         quote bind_quoted: binding do
-            fn_name = :"rule_#{length(@rules) + 1}_line_#{__ENV__.line()}"
+            line = __ENV__.line()
+            fn_name = :"rule_#{length(@rules) + 1}_line_#{line}"
 
             @doc false
             def unquote(fn_name)(unquote(srcs_arg),
                                  unquote(tgts_arg),
                                  unquote(dir_arg)), do: unquote(block)
 
-            @rules Keyword.put([targets: targets, sources: sources], :recipe, {__MODULE__, fn_name, 3})
+            @rules Keyword.put([targets: targets, sources: sources], :recipe, {__MODULE__, fn_name, 3, line})
         end
     end
 
@@ -192,7 +194,8 @@ defmodule ExMake.File do
         block = Macro.escape(block)
 
         quote bind_quoted: binding do
-            fn_name = :"rule_#{length(@rules) + 1}_line_#{__ENV__.line()}"
+            line = __ENV__.line()
+            fn_name = :"rule_#{length(@rules) + 1}_line_#{line}"
 
             @doc false
             def unquote(fn_name)(unquote(srcs_arg),
@@ -200,7 +203,7 @@ defmodule ExMake.File do
                                  unquote(dir_arg),
                                  unquote(args_arg)), do: unquote(block)
 
-            @rules Keyword.put([targets: targets, sources: sources], :recipe, {__MODULE__, fn_name, 4})
+            @rules Keyword.put([targets: targets, sources: sources], :recipe, {__MODULE__, fn_name, 4, line})
         end
     end
 
@@ -255,13 +258,14 @@ defmodule ExMake.File do
         block = Macro.escape(block)
 
         quote bind_quoted: binding do
-            fn_name = :"phony_rule_#{length(@phony_rules) + 1}_line_#{__ENV__.line()}"
+            line = __ENV__.line()
+            fn_name = :"phony_rule_#{length(@phony_rules) + 1}_line_#{line}"
 
             @doc false
             def unquote(fn_name)(unquote(name_arg),
                                  unquote(srcs_arg)), do: unquote(block)
 
-            @phony_rules Keyword.put([name: name, sources: sources], :recipe, {__MODULE__, fn_name, 2})
+            @phony_rules Keyword.put([name: name, sources: sources], :recipe, {__MODULE__, fn_name, 2, line})
         end
     end
 
@@ -276,14 +280,15 @@ defmodule ExMake.File do
         block = Macro.escape(block)
 
         quote bind_quoted: binding do
-            fn_name = :"phony_rule_#{length(@phony_rules) + 1}_line_#{__ENV__.line()}"
+            line = __ENV__.line()
+            fn_name = :"phony_rule_#{length(@phony_rules) + 1}_line_#{line}"
 
             @doc false
             def unquote(fn_name)(unquote(name_arg),
                                  unquote(srcs_arg),
                                  unquote(dir_arg)), do: unquote(block)
 
-            @phony_rules Keyword.put([name: name, sources: sources], :recipe, {__MODULE__, fn_name, 3})
+            @phony_rules Keyword.put([name: name, sources: sources], :recipe, {__MODULE__, fn_name, 3, line})
         end
     end
 
@@ -299,7 +304,8 @@ defmodule ExMake.File do
         block = Macro.escape(block)
 
         quote bind_quoted: binding do
-            fn_name = :"phony_rule_#{length(@phony_rules) + 1}_line_#{__ENV__.line()}"
+            line = __ENV__.line()
+            fn_name = :"phony_rule_#{length(@phony_rules) + 1}_line_#{line}"
 
             @doc false
             def unquote(fn_name)(unquote(name_arg),
@@ -307,7 +313,7 @@ defmodule ExMake.File do
                                  unquote(dir_arg),
                                  unquote(args_arg)), do: unquote(block)
 
-            @phony_rules Keyword.put([name: name, sources: sources], :recipe, {__MODULE__, fn_name, 4})
+            @phony_rules Keyword.put([name: name, sources: sources], :recipe, {__MODULE__, fn_name, 4, line})
         end
     end
 end
