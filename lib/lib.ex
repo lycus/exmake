@@ -24,26 +24,26 @@ defmodule ExMake.Lib do
 
             @before_compile unquote(__MODULE__)
 
-            @description ""
-            @version {0, 0, 0}
-            @url ""
+            @exmake_description ""
+            @exmake_version {0, 0, 0}
+            @exmake_url ""
 
-            Module.register_attribute(__MODULE__, :description, [persist: true])
-            Module.register_attribute(__MODULE__, :licenses, [accumulate: true, persist: true])
-            Module.register_attribute(__MODULE__, :version, [persist: true])
-            Module.register_attribute(__MODULE__, :url, [persist: true])
-            Module.register_attribute(__MODULE__, :authors, [accumulate: true, persist: true])
+            Module.register_attribute(__MODULE__, :exmake_description, [persist: true])
+            Module.register_attribute(__MODULE__, :exmake_licenses, [accumulate: true, persist: true])
+            Module.register_attribute(__MODULE__, :exmake_version, [persist: true])
+            Module.register_attribute(__MODULE__, :exmake_url, [persist: true])
+            Module.register_attribute(__MODULE__, :exmake_authors, [accumulate: true, persist: true])
         end
     end
 
     @doc false
     defmacro __before_compile__(_) do
         quote do
-            def __exmake__(:description), do: @description
-            def __exmake__(:licenses), do: Enum.reverse(@licenses)
-            def __exmake__(:version), do: @version
-            def __exmake__(:url), do: @url
-            def __exmake__(:authors), do: Enum.reverse(@authors)
+            def __exmake__(:description), do: @exmake_description
+            def __exmake__(:licenses), do: Enum.reverse(@exmake_licenses)
+            def __exmake__(:version), do: @exmake_version
+            def __exmake__(:url), do: @exmake_url
+            def __exmake__(:authors), do: Enum.reverse(@exmake_authors)
         end
     end
 
@@ -51,28 +51,28 @@ defmodule ExMake.Lib do
     Sets a description for the library. Should be a string.
     """
     defmacro description(description) do
-        quote do: @description unquote(description)
+        quote do: @exmake_description unquote(description)
     end
 
     @doc """
     Adds a license name to the list of licenses. Should be a string.
     """
     defmacro license(license) do
-        quote do: @licenses unquote(license)
+        quote do: @exmake_licenses unquote(license)
     end
 
     @doc """
     Sets the version of the library. All components should be non-negative integers.
     """
     defmacro version(major, minor, patch) do
-        quote do: @version {unquote(major), unquote(minor), unquote(patch)}
+        quote do: @exmake_version {unquote(major), unquote(minor), unquote(patch)}
     end
 
     @doc """
     Sets the URL to the library's repository. Should be a string.
     """
     defmacro url(url) do
-        quote do: @url unquote(url)
+        quote do: @exmake_url unquote(url)
     end
 
     @doc """
@@ -80,6 +80,6 @@ defmodule ExMake.Lib do
     be strings.
     """
     defmacro author(author, email) do
-        quote do: @author {unquote(author), unquote(email)}
+        quote do: @exmake_author {unquote(author), unquote(email)}
     end
 end
