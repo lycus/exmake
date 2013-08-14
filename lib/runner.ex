@@ -50,7 +50,20 @@ defmodule ExMake.Runner do
                         rule_args = rule_args ++ [args]
                     end
 
+                    cwd = File.cwd!()
+
                     apply(m, f, rule_args)
+
+                    if (ncwd = File.cwd!()) != cwd do
+                        r = rule |>
+                            Keyword.delete(:recipe) |>
+                            Keyword.delete(:directory) |>
+                            inspect()
+
+                        msg = "Recipe for rule #{r} changed directory from '#{cwd}' to '#{ncwd}' without changing back"
+
+                        raise(ExMake.ScriptError[description: msg])
+                    end
                 end
 
                 :ok
