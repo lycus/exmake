@@ -13,6 +13,7 @@ defmodule ExMake.Lib do
     Using this module implicitly imports the following modules:
 
     * `ExMake.File`
+    * `ExMake.Lib`
     * `ExMake.Utils`
     """
 
@@ -20,6 +21,7 @@ defmodule ExMake.Lib do
     defmacro __using__(_) do
         quote do
             import ExMake.File
+            import ExMake.Lib
             import ExMake.Utils
 
             @before_compile unquote(__MODULE__)
