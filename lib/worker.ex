@@ -127,7 +127,21 @@ defmodule ExMake.Worker do
                         end
                     end)
 
-                    if v2, do: :digraph.add_edge(g, v, v2)
+                    if v2 do
+                        case :digraph.add_edge(g, v, v2) do
+                            {:error, {:bad_edge, path}} ->
+                                [r1, r2] = [:digraph.vertex(g, hd(path)), :digraph.vertex(g, List.last(path))] |>
+                                           Enum.map(fn(x) -> elem(x, 1) end) |>
+                                           Enum.map(fn(x) -> Keyword.delete(x, :recipe) end) |>
+                                           Enum.map(fn(x) -> Keyword.delete(x, :directory) end) |>
+                                           Enum.map(fn(x) -> inspect(x) end)
+
+                                msg = "Cyclic dependency detected between\n#{r1}\nand\n#{r2}"
+
+                                raise(ExMake.ScriptError[description: msg])
+                            _ -> :ok
+                        end
+                    end
                 end)
             end)
 
