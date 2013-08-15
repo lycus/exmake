@@ -84,4 +84,24 @@ defmodule ExMake.Utils do
             x -> {:rescue, x}
         end
     end
+
+    @doc """
+    Attempts to find an executable in `PATH` given its name. An
+    environment variable name can optionally be given, which, if
+    set, will be preferred.
+
+    `name` must be the name of the executable as a string. `var`
+    must be an environment variable name as a string.
+    """
+    @spec find_exe(String.t(), String.t() | nil) :: String.t() | nil
+    def find_exe(name, var // "") do
+        case System.get_env(var) do
+            nil ->
+                case :os.find_executable(String.to_char_list!(name)) do
+                    false -> nil
+                    path -> String.from_char_list!(path)
+                end
+            path -> path
+        end
+    end
 end
