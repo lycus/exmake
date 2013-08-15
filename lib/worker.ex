@@ -68,18 +68,25 @@ defmodule ExMake.Worker do
         file = cfg.options()[:file] || "Exmakefile"
 
         code = try do
+            env_cached = ExMake.Cache.env_cached?()
+
+            if env_cached, do: ExMake.Cache.load_env()
+
             mods = ExMake.Loader.load(".", file)
+
+            if !env_cached, do: ExMake.Cache.save_env()
+
             files = Enum.map(mods, fn({d, f, _}) -> Path.join(d, f) end)
 
-            g = if !ExMake.Cache.cache_stale?(files) do
-                ExMake.Cache.load_graph()
-            else
+            g = if ExMake.Cache.graph_cache_stale?(files) do
                 g = construct_graph(mods, pass_go, pass_end)
 
                 # Cache the generated graph.
                 ExMake.Cache.save_graph(g)
 
                 g
+            else
+                ExMake.Cache.load_graph()
             end
 
             # Now create pruned graphs for each target and process them.

@@ -108,6 +108,10 @@ defmodule ExMake.Lib do
 
     The argument to the `on_load` function is a list of terms, as originally given to
     `ExMake.File.load_lib/2` or `ExMake.File.load_lib_qual/2`.
+
+    Note that the `on_load` function will only be called when the environment table
+    cache file does not exist. In other words, an `on_load` function should avoid
+    having side-effects beyond setting variables in the environment table.
     """
     defmacro on_load(args_arg, [do: block]) do
         args_arg = Macro.escape(args_arg)
