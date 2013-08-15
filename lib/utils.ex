@@ -58,8 +58,8 @@ defmodule ExMake.Utils do
                                     exit_code: code])
         end
 
-        if cfg.options()[:loud] && text != "" do
-            ExMake.Logger.info(cmd)
+        if cfg.options()[:loud] && String.strip(text) != "" do
+            ExMake.Logger.info(text)
         end
 
         text
