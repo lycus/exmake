@@ -21,6 +21,8 @@ defexception ExMake.ShellError, command: "",
     """
     @spec message(t()) :: String.t()
     def message(self) do
-        "#{self.output()}Command '#{self.command()}' exited with code: #{self.exit_code()}"
+        out = if String.strip(s = self.output()) != "", do: "\n#{s}", else: ""
+
+        "Command '#{self.command()}' exited with code: #{self.exit_code()}#{out}"
     end
 end
