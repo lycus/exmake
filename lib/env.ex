@@ -67,6 +67,20 @@ defmodule ExMake.Env do
     end
 
     @doc """
+    Sets the given key to the empty list.
+
+    `name` must be a string.
+    """
+    @spec list_put(String.t()) :: :ok
+    def list_put(name) do
+        tab = ensure_ets_table()
+
+        :ets.insert(tab, {name, []})
+
+        :ok
+    end
+
+    @doc """
     Appends a value to a list identified by the given key. Raises an
     `ExMake.EnvError` if the value for the given key is not a list.
 
