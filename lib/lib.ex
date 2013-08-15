@@ -12,6 +12,7 @@ defmodule ExMake.Lib do
 
     Using this module implicitly imports the following modules:
 
+    * `ExMake.Env`
     * `ExMake.File`
     * `ExMake.Lib`
     * `ExMake.Utils`
@@ -20,6 +21,7 @@ defmodule ExMake.Lib do
     @doc false
     defmacro __using__(_) do
         quote do
+            import ExMake.Env
             import ExMake.File
             import ExMake.Lib
             import ExMake.Utils

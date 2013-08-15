@@ -12,6 +12,7 @@ defmodule ExMake.File do
 
     Using this module implicitly imports the following modules:
 
+    * `ExMake.Env`
     * `ExMake.File`
     * `ExMake.Utils`
     """
@@ -19,6 +20,7 @@ defmodule ExMake.File do
     @doc false
     defmacro __using__(_) do
         quote do
+            import ExMake.Env
             import ExMake.File
             import ExMake.Utils
 
