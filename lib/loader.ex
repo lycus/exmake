@@ -8,13 +8,18 @@ defmodule ExMake.Loader do
     `{dir, file, mod}` where `mod` is the name of the module containing
     rules and recipes. Raises `ExMake.LoadError` if loading failed for
     some reason. Raises `ExMake.ScriptError` if an `ExMake.File.recurse`
-    directive contained an invalid direcory name.
+    directive contained an invalid directory or file name. Raises
+    `ExMake.UsageError` if `file` is invalid.
 
     `dir` must be a path to a directory. `file` must be the name of the
     file to load in `dir`.
     """
     @spec load(Path.t(), Path.t()) :: [{Path.t(), Path.t(), module()}, ...]
     def load(dir, file // "Exmakefile") do
+        if String.contains?(file, ["\\", "/"]) do
+            raise(ExMake.UsageError[description: "Script file name '#{file}' contains path separator"])
+        end
+
         p = Path.join(dir, file)
 
         list = try do
