@@ -30,10 +30,10 @@ defmodule ExMake.Lib.Erlang do
 
             rule [Path.rootname(src) <> ".beam"],
                  [src],
-                 [src], _ do
+                 [src], _, dir do
                 flags = Enum.join(unquote(opts)[:flags] || [], " ")
                 includes = list_get("ERLC_INCLUDES") ++ (unquote(opts)[:includes] || []) |>
-                           Enum.map(fn(i) -> "-I #{i}" end) |>
+                           Enum.map(fn(i) -> "-I #{Path.join(dir, i)}" end) |>
                            Enum.join(" ")
 
                 shell("${ERLC} ${ERLC_FLAGS} #{flags} #{includes} -o #{Path.dirname(src)} #{src}")
