@@ -71,17 +71,13 @@ defmodule ExMake.Worker do
             mods = ExMake.Loader.load(".", file)
             files = Enum.map(mods, fn({d, f, _}) -> Path.join(d, f) end)
 
-            cache = Enum.any?(mods, fn({d, _, m}) -> d == "." && m.__exmake__(:cache) end)
-
-            g = if cache && !ExMake.Cache.cache_stale?(files) do
+            g = if !ExMake.Cache.cache_stale?(files) do
                 ExMake.Cache.load_graph()
             else
                 g = construct_graph(mods, pass_go, pass_end)
 
-                # If caching is enabled and we got here, that means
-                # no cached files exist or that they're stale. Either
-                # way, create them.
-                if cache, do: ExMake.Cache.save_graph(g)
+                # Cache the generated graph.
+                ExMake.Cache.save_graph(g)
 
                 g
             end
