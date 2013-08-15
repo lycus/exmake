@@ -27,12 +27,15 @@ defmodule ExMake.Lib.Erlang do
     defmacro erlang(src, opts // []) do
         quote do
             src = unquote(src)
+            srcs = [src] ++ (unquote(opts)[:headers] || [])
 
             rule [Path.rootname(src) <> ".beam"],
-                 [src],
+                 srcs,
                  [src], _, dir do
-                flags = Enum.join(unquote(opts)[:flags] || [], " ")
-                includes = list_get("ERLC_INCLUDES") ++ (unquote(opts)[:includes] || []) |>
+                opts = unquote(opts)
+
+                flags = Enum.join(opts[:flags] || [], " ")
+                includes = list_get("ERLC_INCLUDES") ++ (opts[:includes] || []) |>
                            Enum.map(fn(i) -> "-I #{Path.join(dir, i)}" end) |>
                            Enum.join(" ")
 
