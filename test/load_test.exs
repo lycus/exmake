@@ -8,7 +8,7 @@ defmodule ExMake.Test.LoadTest do
         {t, c} = execute_in(p)
 
         assert c == 1
-        assert t == "Error: ./Exmakefile: No module ending in '.Exmakefile' defined"
+        assert t == "ExMake.LoadError: ./Exmakefile: No module ending in '.Exmakefile' defined"
     end
 
     test "too many modules" do
@@ -24,7 +24,7 @@ defmodule ExMake.Test.LoadTest do
         {t, c} = execute_in(p)
 
         assert c == 1
-        assert t == "Error: ./Exmakefile: 2 modules ending in '.Exmakefile' defined"
+        assert t == "ExMake.LoadError: ./Exmakefile: 2 modules ending in '.Exmakefile' defined"
     end
 
     test "single module" do
@@ -62,7 +62,7 @@ defmodule ExMake.Test.LoadTest do
         {t, c} = execute_in(p)
 
         assert c == 1
-        assert t == "Error: ./Exmakefile: Could not load file"
+        assert t == "ExMake.LoadError: ./Exmakefile: Could not load file"
     end
 
     test "compile error" do
@@ -70,6 +70,6 @@ defmodule ExMake.Test.LoadTest do
         {t, c} = execute_in(p)
 
         assert c == 1
-        assert t =~ %r/Error: .*\/compile_error\/Exmakefile:4: function a\/0 undefined/
+        assert t =~ %r/ExMake.LoadError: .*\/compile_error\/Exmakefile:4: function a\/0 undefined/
     end
 end

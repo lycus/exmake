@@ -64,8 +64,8 @@ defmodule ExMake.Logger do
     `str` must be a binary containing the message.
     """
     @spec error(String.t()) :: :ok
-    def error(str) do
-        output(colorize("Error:", "red") <> " " <> colorize(str, "white"))
+    def error(prefix // "Error", str) do
+        output(colorize(prefix <> ":", "red") <> " " <> colorize(str, "white"))
     end
 
     @doc """

@@ -133,7 +133,7 @@ defmodule ExMake.Worker do
                 # that a rule has stale targets. So simply return 1.
                 1
             ex ->
-                ExMake.Logger.error(ex.message())
+                ExMake.Logger.error(inspect(elem(ex, 0)), ex.message())
                 ExMake.Logger.debug(Exception.format_stacktrace(System.stacktrace()))
                 1
         end
