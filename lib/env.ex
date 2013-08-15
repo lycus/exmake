@@ -8,6 +8,8 @@ defmodule ExMake.Env do
 
     In general, avoid changing the environment table in recipes as
     this can interfere with other, unrelated recipes.
+
+    All keys beginning with `EXMAKE_` are reserved by ExMake.
     """
 
     @spec ensure_ets_table() :: :exmake_env
