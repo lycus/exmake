@@ -10,11 +10,27 @@ defmodule ExMake.Utils do
     as a string. Raises `ExMake.ShellError` if the command returns a
     non-zero exit code.
 
+    Any `${...}` instance in the command string where the `...` matches a
+    key in the `ExMake.Env` table will be replaced with the value that
+    key maps to.
+
+    Example:
+
+        shell("${CC} -c foo.c -o foo.o")
+
     `cmd` must be a string containing the command to execute.
     """
     @spec shell(String.t()) :: String.t()
     def shell(cmd) do
-        cmd = Enum.reduce(System.get_env(), cmd, fn({k, v}, cmd) -> String.replace(cmd, "${#{k}}", v) end)
+        cmd = ExMake.Env.reduce(cmd, fn({k, v}, cmd) ->
+            value = if is_binary(v) do
+                v
+            else
+                Enum.join(v, " ")
+            end
+
+            String.replace(cmd, "${#{k}}", value)
+        end)
 
         cfg = ExMake.Coordinator.get_config(ExMake.Coordinator.locate())
 
