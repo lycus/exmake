@@ -49,17 +49,17 @@ defmodule ExMake.File do
     Similar to `load_lib/2`, but only `require`s the library instead of `import`ing it.
     """
     defmacro load_lib_qual(lib, args // []) do
+        lib_mod = Module.concat(ExMake.Lib, Macro.expand_once(lib, __ENV__))
+
         quote do
-            lib_mod = Module.concat(ExMake.Lib, unquote(lib))
+            {:module, _} = Code.ensure_loaded(unquote(lib_mod))
 
-            {:module, _} = Code.ensure_loaded(lib_mod)
-
-            case lib_mod.__exmake__(:on_load) do
-                {m, f, _} -> apply(m, f, unquote(args))
+            case unquote(lib_mod).__exmake__(:on_load) do
+                {m, f} -> apply(m, f, [unquote(args)])
                 nil -> :ok
             end
 
-            require lib_mod
+            require unquote(lib_mod)
         end
     end
 
@@ -67,14 +67,16 @@ defmodule ExMake.File do
     Loads a library. A list of arguments can be given if the library needs it. The library
     is `import`ed after being loaded.
 
-    `lib` must be the library name, e.g. `C` to load the C compiler module. `args` must
-    be a list of arbitrary terms.
+    `lib` must be the library name, e.g. `C` to load the C compiler module. Note that it
+    must be a compile-time value. `args` must be a list of arbitrary terms.
     """
     defmacro load_lib(lib, args // []) do
-        quote do
-            load_qual(unquote(lib), unquote(args))
+        lib_mod = Module.concat(ExMake.Lib, Macro.expand_once(lib, __ENV__))
 
-            import unquote(lib)
+        quote do
+            load_lib_qual(unquote(lib), unquote(args))
+
+            import unquote(lib_mod)
         end
     end
 

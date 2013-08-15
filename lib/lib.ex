@@ -31,6 +31,7 @@ defmodule ExMake.Lib do
             @exmake_description ""
             @exmake_version {0, 0, 0}
             @exmake_url ""
+            @exmake_on_load nil
 
             Module.register_attribute(__MODULE__, :exmake_description, [persist: true])
             Module.register_attribute(__MODULE__, :exmake_licenses, [accumulate: true, persist: true])
@@ -113,13 +114,12 @@ defmodule ExMake.Lib do
         block = Macro.escape(block)
 
         quote bind_quoted: binding do
-            line = __ENV__.line()
-            fn_name = :"on_load_#{length(@exmake_on_load) + 1}_line_#{line}"
+            fn_name = :on_load
 
             @doc false
             def unquote(fn_name)(unquote(args_arg)), do: unquote(block)
 
-            @exmake_on_load {__MODULE__, fn_name, line}
+            @exmake_on_load {__MODULE__, fn_name}
         end
     end
 end
