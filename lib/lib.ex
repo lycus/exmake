@@ -37,6 +37,7 @@ defmodule ExMake.Lib do
             Module.register_attribute(__MODULE__, :exmake_version, [persist: true])
             Module.register_attribute(__MODULE__, :exmake_url, [persist: true])
             Module.register_attribute(__MODULE__, :exmake_authors, [accumulate: true, persist: true])
+            Module.register_attribute(__MODULE__, :exmake_on_load, [persist: true])
         end
     end
 
@@ -48,6 +49,7 @@ defmodule ExMake.Lib do
             def __exmake__(:version), do: @exmake_version
             def __exmake__(:url), do: @exmake_url
             def __exmake__(:authors), do: Enum.reverse(@exmake_authors)
+            def __exmake__(:on_load), do: @exmake_on_load
         end
     end
 
@@ -86,5 +88,38 @@ defmodule ExMake.Lib do
     """
     defmacro author(author, email) do
         quote do: @exmake_author {unquote(author), unquote(email)}
+    end
+
+    @doc """
+    Defines a function that gets called when the library is loaded.
+
+    Example:
+
+        defmodule ExMake.Lib.Foo do
+            use ExMake.Lib
+
+            on_load args do
+                Enum.each(args, fn(arg) ->
+                    # ...
+                end)
+            end
+        end
+
+    The argument to the `on_load` function is a list of terms, as originally given to
+    `ExMake.File.load_lib/2` or `ExMake.File.load_lib_qual/2`.
+    """
+    defmacro on_load(args_arg, [do: block]) do
+        args_arg = Macro.escape(args_arg)
+        block = Macro.escape(block)
+
+        quote bind_quoted: binding do
+            line = __ENV__.line()
+            fn_name = :"on_load_#{length(@exmake_on_load) + 1}_line_#{line}"
+
+            @doc false
+            def unquote(fn_name)(unquote(args_arg)), do: unquote(block)
+
+            @exmake_on_load {__MODULE__, fn_name, line}
+        end
     end
 end

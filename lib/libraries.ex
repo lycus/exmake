@@ -57,41 +57,4 @@ defmodule ExMake.Libraries do
                 :error
         end
     end
-
-    @spec ensure_ets_table() :: :exmake_lib_args
-    defp ensure_ets_table() do
-        tab = :exmake_lib_args
-
-        _ = try do
-            :ets.new(tab, [:public, :named_table])
-        rescue
-            ArgumentError -> :ok
-        end
-
-        tab
-    end
-
-    @doc """
-    Sets the library arguments for `lib` to `args`.
-
-    `lib` must be a module atom. `args` must be a list of terms.
-    """
-    @spec set_lib_args(module(), [term()]) :: :ok
-    def set_lib_args(lib, args) do
-        :ets.insert(ensure_ets_table(), {lib, args})
-        :ok
-    end
-
-    @doc """
-    Gets the library arguments for `lib` as a list of terms.
-
-    `lib` must be a module atom.
-    """
-    @spec get_lib_args(module()) :: [term()]
-    def get_lib_args(lib) do
-        case :ets.lookup(ensure_ets_table(), lib) do
-            [{_, args}] -> args
-            [] -> []
-        end
-    end
 end

@@ -52,8 +52,12 @@ defmodule ExMake.File do
         quote do
             lib_mod = Module.concat(ExMake.Lib, unquote(lib))
 
-            ExMake.Libraries.set_lib_args(lib_mod, unquote(args))
             {:module, _} = Code.ensure_loaded(lib_mod)
+
+            case lib_mod.__exmake__(:on_load) do
+                {m, f, _} -> apply(m, f, unquote(args))
+                nil -> :ok
+            end
 
             require lib_mod
         end
