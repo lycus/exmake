@@ -80,6 +80,13 @@ defmodule ExMake.Cache do
     def load_env(dir // ".exmake") do
         path = Path.join(dir, "table.env")
 
+        # If the table exists, kill it, then reload from cache.
+        try do
+            :ets.delete(:exmake_env)
+        rescue
+            ArgumentError -> :ok
+        end
+
         case :ets.file2tab(String.to_char_list!(path)) do
             {:error, r} ->
                 ExMake.Logger.debug("Failed to load environment cache file '#{path}': #{inspect(r)}")
