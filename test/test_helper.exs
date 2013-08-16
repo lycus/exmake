@@ -56,8 +56,8 @@ defmodule ExMake.Test.Case do
             cfg = ExMake.Config[targets: rest,
                                 options: opts]
 
-            ExMake.Coordinator.set_config(ExMake.Coordinator.locate(), cfg)
-            ExMake.Worker.work(ExMake.Worker.locate())
+            ExMake.Coordinator.set_config(cfg)
+            ExMake.Worker.work()
 
             recv = fn(recv, acc) ->
                 receive do

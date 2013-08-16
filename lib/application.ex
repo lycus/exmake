@@ -63,8 +63,8 @@ defmodule ExMake.Application do
         cfg = ExMake.Config[targets: rest,
                             options: opts]
 
-        ExMake.Coordinator.set_config(ExMake.Coordinator.locate(), cfg)
-        code = ExMake.Worker.work(ExMake.Worker.locate())
+        ExMake.Coordinator.set_config(cfg)
+        code = ExMake.Worker.work()
 
         System.halt(code)
     end

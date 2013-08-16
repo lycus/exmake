@@ -18,7 +18,7 @@ defmodule ExMake.Worker do
     end
 
     @doc """
-    Locates a worker process. Returns the PID if found; otherwise,
+    Locates the worker process. Returns the PID if found; otherwise,
     returns `nil`.
     """
     @spec locate() :: pid() | nil
@@ -27,16 +27,17 @@ defmodule ExMake.Worker do
     end
 
     @doc """
-    Instructs the given worker process to execute a script file specified
-    by the given configuration. Returns the exit code of the operation.
+    Instructs the worker process to execute a script file specified by
+    the configuration previously handed to the coordinator via the
+    `ExMake.Coordinator.set_config/2` function. Returns the exit code
+    of the operation.
 
-    `pid` must be the PID of an `ExMake.Worker` process. `timeout` must be
-    `:infinity` or a millisecond value specifying how much time to wait
-    for the operation to complete.
+    `timeout` must be `:infinity` or a millisecond value specifying
+    how much time to wait for the operation to complete.
     """
-    @spec work(pid(), timeout()) :: non_neg_integer()
-    def work(pid, timeout // :infinity) do
-        code = :gen_server.call(pid, :work, timeout)
+    @spec work(timeout()) :: non_neg_integer()
+    def work(timeout // :infinity) do
+        code = :gen_server.call(locate(), :work, timeout)
 
         _ = case :application.get_env(:exmake, :exmake_event_pid) do
             {:ok, pid} -> pid <- {:exmake_shutdown, code}
@@ -51,14 +52,13 @@ defmodule ExMake.Worker do
     def handle_call(:work, _, nil) do
         Enum.each(ExMake.Libraries.search_paths(), fn(x) -> ExMake.Libraries.append_path(x) end)
 
-        coord = ExMake.Coordinator.locate()
-        cfg = ExMake.Coordinator.get_config(coord)
+        cfg = ExMake.Coordinator.get_config()
 
         if cfg.options()[:time] do
-            ExMake.Coordinator.apply_timer_fn(coord, fn(_) -> ExMake.Timer.create_session("ExMake Build Process") end)
+            ExMake.Coordinator.apply_timer_fn(fn(_) -> ExMake.Timer.create_session("ExMake Build Process") end)
 
-            pass_go = fn(p) -> ExMake.Coordinator.apply_timer_fn(coord, fn(s) -> ExMake.Timer.start_pass(s, p) end) end
-            pass_end = fn(p) -> ExMake.Coordinator.apply_timer_fn(coord, fn(s) -> ExMake.Timer.end_pass(s, p) end) end
+            pass_go = fn(p) -> ExMake.Coordinator.apply_timer_fn(fn(s) -> ExMake.Timer.start_pass(s, p) end) end
+            pass_end = fn(p) -> ExMake.Coordinator.apply_timer_fn(fn(s) -> ExMake.Timer.end_pass(s, p) end) end
         else
             # Makes the code below less ugly.
             pass_go = fn(_) -> end
@@ -117,14 +117,14 @@ defmodule ExMake.Worker do
                 # Process leaves until the graph is empty. If we're running
                 # in --question mode, only check staleness of files.
                 if cfg.options()[:question] do
-                    process_graph_question(coord, g2, pass_go, pass_end)
+                    process_graph_question(g2, pass_go, pass_end)
                 else
-                    process_graph(coord, g2, pass_go, pass_end)
+                    process_graph(g2, pass_go, pass_end)
                 end
             end)
 
             if cfg.options()[:time] do
-                ExMake.Coordinator.apply_timer_fn(coord, fn(session) ->
+                ExMake.Coordinator.apply_timer_fn(fn(session) ->
                     ExMake.Logger.info(ExMake.Timer.format_session(ExMake.Timer.finish_session(session)))
 
                     nil
@@ -299,8 +299,8 @@ defmodule ExMake.Worker do
         g
     end
 
-    @spec process_graph(pid(), digraph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
-    defp process_graph(coord, graph, pass_go, pass_end, n // 0) do
+    @spec process_graph(digraph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
+    defp process_graph(graph, pass_go, pass_end, n // 0) do
         pass_go.("Compute Leaves (#{n})")
 
         # Compute the leaf vertices. These have no outgoing edges.
@@ -316,7 +316,7 @@ defmodule ExMake.Worker do
 
             ExMake.Logger.debug("Enqueuing rule: #{inspect(r)}")
 
-            ExMake.Coordinator.enqueue(coord, r)
+            ExMake.Coordinator.enqueue(r)
         end)
 
         pass_end.("Enqueue Jobs (#{n})")
@@ -348,11 +348,11 @@ defmodule ExMake.Worker do
         pass_end.("Wait for Jobs (#{n})")
 
         # Process the next 'wave' of leaf nodes, if any.
-        if :digraph.no_vertices(graph) == 0, do: :ok, else: process_graph(coord, graph, pass_go, pass_end, n + 1)
+        if :digraph.no_vertices(graph) == 0, do: :ok, else: process_graph(graph, pass_go, pass_end, n + 1)
     end
 
-    @spec process_graph_question(pid(), digraph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
-    defp process_graph_question(coord, graph, pass_go, pass_end, n // 0) do
+    @spec process_graph_question(digraph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
+    defp process_graph_question(graph, pass_go, pass_end, n // 0) do
         pass_go.("Compute Leaves (#{n})")
 
         # Compute the leaf vertices. These have no outgoing edges.
@@ -389,6 +389,6 @@ defmodule ExMake.Worker do
 
         pass_end.("Check Timestamps (#{n})")
 
-        if :digraph.no_vertices(graph) == 0, do: :ok, else: process_graph_question(coord, graph, pass_go, pass_end, n + 1)
+        if :digraph.no_vertices(graph) == 0, do: :ok, else: process_graph_question(graph, pass_go, pass_end, n + 1)
     end
 end

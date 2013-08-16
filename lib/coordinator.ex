@@ -30,7 +30,7 @@ defmodule ExMake.Coordinator do
     end
 
     @doc """
-    Locates a coordinator process. Returns the PID if found; otherwise,
+    Locates the coordinator process. Returns the PID if found; otherwise,
     returns `nil`.
     """
     @spec locate() :: pid() | nil
@@ -41,14 +41,13 @@ defmodule ExMake.Coordinator do
     @doc """
     Sets the configuration values for the ExMake application.
 
-    `pid` must be the PID of an `ExMake.Coordinator` process. `cfg` must be
-    a valid `ExMake.Config` instance. `timeout` must be `:infinity` or a
-    millisecond value specifying how much time to wait for the operation to
-    complete.
+    `cfg` must be a valid `ExMake.Config` instance. `timeout` must be
+    `:infinity` or a millisecond value specifying how much time to wait for
+    the operation to complete.
     """
-    @spec set_config(pid(), ExMake.Config.t(), timeout()) :: :ok
-    def set_config(pid, cfg, timeout // :infinity) do
-        :gen_server.call(pid, {:set_cfg, cfg}, timeout)
+    @spec set_config(ExMake.Config.t(), timeout()) :: :ok
+    def set_config(cfg, timeout // :infinity) do
+        :gen_server.call(locate(), {:set_cfg, cfg}, timeout)
         :ok
     end
 
@@ -56,13 +55,12 @@ defmodule ExMake.Coordinator do
     Gets the configuration values used by the ExMake application. Returns
     `nil` if no values have been set yet.
 
-    `pid` must be the PID of an `ExMake.Worker` process. `timeout` must be
-    `:infinity` or a millisecond value specifying how much time to wait for
-    the operation to complete.
+    `timeout` must be `:infinity` or a millisecond value specifying how much
+    time to wait for the operation to complete.
     """
-    @spec get_config(pid(), timeout()) :: ExMake.Config.t() | nil
-    def get_config(pid, timeout // :infinity) do
-        {:get_cfg, cfg} = :gen_server.call(pid, {:get_cfg}, timeout)
+    @spec get_config(timeout()) :: ExMake.Config.t() | nil
+    def get_config(timeout // :infinity) do
+        {:get_cfg, cfg} = :gen_server.call(locate(), {:get_cfg}, timeout)
         cfg
     end
 
@@ -78,15 +76,14 @@ defmodule ExMake.Coordinator do
 
     Here, `rule` is the rule originally passed to this function.
 
-    `pid` must be the PID of an `ExMake.Coordinator` process. `rule` must be the
-    keyword list describing the rule. `owner` must be a PID pointing to the process
-    that should be notified once the job is done. `timeout` must be `:infinity` or
-    a millisecond value specifying how much time to wait for the operation to
-    complete.
+    `rule` must be the keyword list describing the rule. `owner` must be a PID
+    pointing to the process that should be notified once the job is done.
+    `timeout` must be `:infinity` or a millisecond value specifying how much
+    time to wait for the operation to complete.
     """
-    @spec enqueue(pid(), Keyword.t(), pid(), timeout()) :: :ok
-    def enqueue(pid, rule, owner // self(), timeout // :infinity) do
-        :gen_server.call(pid, {:enqueue, rule, owner}, timeout)
+    @spec enqueue(Keyword.t(), pid(), timeout()) :: :ok
+    def enqueue(rule, owner // self(), timeout // :infinity) do
+        :gen_server.call(locate(), {:enqueue, rule, owner}, timeout)
         :ok
     end
 
@@ -95,9 +92,9 @@ defmodule ExMake.Coordinator do
     receives the session object as its only parameter and must return a new session
     object.
 
-    `pid` must be the PID of an `ExMake.Coordinator` process. `fun` must be the
-    function to apply on the session object. `timeout` must be `:infinity` or a
-    millisecond value specifying how much time to wait for the operation to complete.
+    `fun` must be the function to apply on the session object. `timeout` must be
+    `:infinity` or a millisecond value specifying how much time to wait for the
+    operation to complete.
     """
     @spec apply_timer_fn(pid(), ((ExMake.Timer.session()) -> ExMake.Timer.session()), timeout()) :: :ok
     def apply_timer_fn(pid, fun, timeout // :infinity) do

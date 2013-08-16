@@ -59,7 +59,7 @@ defmodule ExMake.File do
             if !ExMake.Cache.env_cached?() do
                 case unquote(lib_mod).__exmake__(:on_load) do
                     {m, f} ->
-                        cargs = ExMake.Coordinator.get_config(ExMake.Coordinator.locate()).options()[:args] || []
+                        cargs = ExMake.Coordinator.get_config().options()[:args] || []
 
                         apply(m, f, [unquote(args), cargs])
                     nil -> :ok

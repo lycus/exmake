@@ -32,7 +32,7 @@ defmodule ExMake.Utils do
             String.replace(cmd, "${#{k}}", value)
         end)
 
-        cfg = ExMake.Coordinator.get_config(ExMake.Coordinator.locate())
+        cfg = ExMake.Coordinator.get_config()
 
         if cfg.options()[:loud] do
             ExMake.Logger.note(cmd)
