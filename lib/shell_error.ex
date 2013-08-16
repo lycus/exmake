@@ -2,7 +2,7 @@ defexception ExMake.ShellError, command: "",
                                 output: "",
                                 exit_code: 0 do
     @moduledoc """
-    The exception raised by `ExMake.Utils.shell/1` if a program does not
+    The exception raised by `ExMake.Utils.shell/2` if a program does not
     exit with an exit code of zero.
 
     `command` contains the full command line that was executed. `output`

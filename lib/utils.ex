@@ -18,10 +18,12 @@ defmodule ExMake.Utils do
 
         shell("${CC} -c foo.c -o foo.o")
 
-    `cmd` must be a string containing the command to execute.
+    `cmd` must be a string containing the command to execute. `silent`
+    must be a Boolean value indicating whether to override configuration
+    when it comes to logging.
     """
-    @spec shell(String.t()) :: String.t()
-    def shell(cmd) do
+    @spec shell(String.t(), boolean()) :: String.t()
+    def shell(cmd, silent // false) do
         cmd = ExMake.Env.reduce(cmd, fn({k, v}, cmd) ->
             value = if is_binary(v) do
                 v
@@ -34,7 +36,7 @@ defmodule ExMake.Utils do
 
         cfg = ExMake.Coordinator.get_config()
 
-        if cfg.options()[:loud] do
+        if cfg.options()[:loud] && !silent do
             ExMake.Logger.note(cmd)
         end
 
@@ -58,7 +60,7 @@ defmodule ExMake.Utils do
                                     exit_code: code])
         end
 
-        if cfg.options()[:loud] && String.strip(text) != "" do
+        if cfg.options()[:loud] && String.strip(text) != "" && !silent do
             ExMake.Logger.info(text)
         end
 
