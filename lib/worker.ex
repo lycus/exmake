@@ -65,6 +65,8 @@ defmodule ExMake.Worker do
             pass_end = fn(_) -> end
         end
 
+        if cfg.options()[:clear], do: ExMake.Cache.clear_cache()
+
         file = cfg.options()[:file] || "Exmakefile"
 
         code = try do

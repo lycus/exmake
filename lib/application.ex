@@ -48,6 +48,7 @@ defmodule ExMake.Application do
             ExMake.Logger.info("    --jobs, -j <jobs [1]>           Run the specified number of concurrent jobs.")
             ExMake.Logger.info("    --args, -a <arguments []>       Specify arguments to pass to rules.")
             ExMake.Logger.info("    --time, -t                      Print timing information.")
+            ExMake.Logger.info("    --clear, -c                     Clear the graph and environment cache.")
             ExMake.Logger.info("")
         end
 
@@ -89,7 +90,8 @@ defmodule ExMake.Application do
                                             q: :question,
                                             j: :jobs,
                                             a: :args,
-                                            t: :time]])
+                                            t: :time,
+                                            c: :clear]])
     end
 
     @doc """

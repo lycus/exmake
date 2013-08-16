@@ -16,6 +16,24 @@ defmodule ExMake.Cache do
     end
 
     @doc """
+    Removes all cached files from the given directory
+    if they exist.
+
+    `dir` must be the path to the cache directory.
+    """
+    @spec clear_cache(Path.t()) :: :ok
+    def clear_cache(dir // ".exmake") do
+        files = [Path.join(dir, "vertices.dag"),
+                 Path.join(dir, "edges.dag"),
+                 Path.join(dir, "neighbors.dag"),
+                 Path.join(dir, "table.env")]
+
+        Enum.each(files, fn(f) -> File.rm(f) end)
+
+        :ok
+    end
+
+    @doc """
     Checks if the cache files are stale with regards to the
     given script files.
 

@@ -16,6 +16,7 @@ defrecord ExMake.Config, targets: [],
     * `jobs`: Integer value indicating how many concurrent jobs to run.
     * `args`: String value indicating arguments to be passed to rules.
     * `time`: Boolean value indicating whether to print timing information.
+    * `clear`: Boolean value indicating whther to clear the graph and environment cache.
     """
 
     record_type(targets: [String.t(), ...],
