@@ -44,17 +44,15 @@ defmodule ExMake.Test.Case do
 
     def execute_in(path, args // []) do
         File.cd!(path, fn() ->
-            tup = ExMake.Application.parse(args)
-
-            opts = elem(tup, 0)
-            rest = elem(tup, 1)
+            {opts, rest, _, tail} = ExMake.Application.parse(args)
 
             if Enum.empty?(rest), do: rest = ["all"]
 
             :application.set_env(:exmake, :exmake_event_pid, self())
 
             cfg = ExMake.Config[targets: rest,
-                                options: opts]
+                                options: opts,
+                                args: tail]
 
             ExMake.Coordinator.set_config(cfg)
             ExMake.Worker.work()

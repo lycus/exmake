@@ -14,11 +14,7 @@ defmodule ExMake.Application do
     """
     @spec main([String.t()]) :: no_return()
     def main(args) do
-        tup = parse(args)
-
-        opts = elem(tup, 0)
-        rest = elem(tup, 1)
-        inv = if tuple_size(tup) >= 3, do: elem(tup, 2), else: []
+        {opts, rest, inv, tail} = parse(args)
 
         Enum.each(inv, fn({opt, val}) ->
             ExMake.Logger.error("Invalid value '#{val}' for option '--#{opt}'")
@@ -46,9 +42,9 @@ defmodule ExMake.Application do
             ExMake.Logger.info("    --loud, -l                      Print targets and commands.")
             ExMake.Logger.info("    --question, -q                  Exit with 0 if everything is up to date; otherwise, 1.")
             ExMake.Logger.info("    --jobs, -j <jobs [1]>           Run the specified number of concurrent jobs.")
-            ExMake.Logger.info("    --args, -a <arguments []>       Specify arguments to pass to rules.")
             ExMake.Logger.info("    --time, -t                      Print timing information.")
             ExMake.Logger.info("    --clear, -c                     Clear the graph and environment cache.")
+            ExMake.Logger.info("    --args, -a <arguments []>       Pass all remaining arguments to libraries.")
             ExMake.Logger.info("")
         end
 
@@ -61,7 +57,8 @@ defmodule ExMake.Application do
         if Enum.empty?(rest), do: rest = ["all"]
 
         cfg = ExMake.Config[targets: rest,
-                            options: opts]
+                            options: opts,
+                            args: tail]
 
         ExMake.Coordinator.set_config(cfg)
         code = ExMake.Worker.work()
@@ -70,28 +67,38 @@ defmodule ExMake.Application do
     end
 
     @doc """
-    Parses the given command line arguments into an `{options, rest, invalid}`
-    pair and returns it.
+    Parses the given command line arguments into an
+    `{options, rest, invalid, tail}` tuple and returns it.
 
     `args` must be a list of binaries containing the command line arguments.
     """
-    @spec parse([String.t()]) :: {Keyword.t(), [String.t()], Keyword.t()}
+    @spec parse([String.t()]) :: {Keyword.t(), [String.t()], Keyword.t(), [String.t()]}
     def parse(args) do
-        OptionParser.parse(args, [switches: [help: :boolean,
-                                             version: :boolean,
-                                             loud: :boolean,
-                                             question: :boolean,
-                                             jobs: :integer,
-                                             time: :boolean],
-                                  aliases: [h: :help,
-                                            v: :version,
-                                            f: :file,
-                                            l: :loud,
-                                            q: :question,
-                                            j: :jobs,
-                                            a: :args,
-                                            t: :time,
-                                            c: :clear]])
+        {args, t} = Enum.split_while(args, fn(x) -> x != "--args" end)
+
+        # Strip off the --args element, if any.
+        if t != [], do: t = tl(t)
+
+        switches = [help: :boolean,
+                    version: :boolean,
+                    loud: :boolean,
+                    question: :boolean,
+                    jobs: :integer,
+                    time: :boolean]
+
+        aliases = [h: :help,
+                   v: :version,
+                   f: :file,
+                   l: :loud,
+                   q: :question,
+                   j: :jobs,
+                   t: :time,
+                   c: :clear]
+
+        tup = OptionParser.parse(args, [switches: switches, aliases: aliases])
+        i = if tuple_size(tup) >= 3, do: elem(tup, 2), else: []
+
+        {elem(tup, 0), elem(tup, 1), i, t}
     end
 
     @doc """

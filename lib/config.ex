@@ -1,10 +1,12 @@
 defrecord ExMake.Config, targets: [],
-                         options: [] do
+                         options: [],
+                         args: [] do
     @moduledoc """
     Represents the configuration for an invocation of ExMake.
 
     `targets` is a list of targets to build. `options` is a keyword list
-    of global options.
+    of global options. `args` is the list of tail arguments given with
+    `--args`.
 
     `options` can contain:
 
@@ -14,11 +16,11 @@ defrecord ExMake.Config, targets: [],
     * `loud`: Boolean value indicating whether to print targets and commands.
     * `question`: Boolean value indicating whether to just perform an up-to-date check.
     * `jobs`: Integer value indicating how many concurrent jobs to run.
-    * `args`: String value indicating arguments to be passed to rules.
     * `time`: Boolean value indicating whether to print timing information.
     * `clear`: Boolean value indicating whther to clear the graph and environment cache.
     """
 
     record_type(targets: [String.t(), ...],
-                options: Keyword.t())
+                options: Keyword.t(),
+                args: [String.t()])
 end
