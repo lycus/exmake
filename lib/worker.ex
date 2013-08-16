@@ -65,30 +65,72 @@ defmodule ExMake.Worker do
             pass_end = fn(_) -> end
         end
 
-        if cfg.options()[:clear], do: ExMake.Cache.clear_cache()
+        if cfg.options()[:clear] do
+            pass_go.("Clear Build Cache")
+
+            ExMake.Cache.clear_cache()
+
+            pass_end.("Clear Build Cache")
+        end
 
         file = cfg.options()[:file] || "Exmakefile"
 
         code = try do
+            pass_go.("Check Environment Cache")
+
             env_cached = ExMake.Cache.env_cached?()
 
-            if env_cached, do: ExMake.Cache.load_env()
+            pass_end.("Check Environment Cache")
+
+            if env_cached do
+                pass_go.("Load Environment Cache")
+
+                ExMake.Cache.load_env()
+
+                pass_end.("Load Environment Cache")
+            end
+
+            pass_go.("Load Script Files")
 
             mods = ExMake.Loader.load(".", file)
 
-            if !env_cached, do: ExMake.Cache.save_env()
+            pass_end.("Load Script Files")
+
+            if !env_cached do
+                pass_go.("Save Environment Cache")
+
+                ExMake.Cache.save_env()
+
+                pass_end.("Save Environment Cache")
+            end
 
             files = Enum.map(mods, fn({d, f, _}) -> Path.join(d, f) end)
 
-            g = if ExMake.Cache.graph_cache_stale?(files) do
+            pass_go.("Check Graph Cache")
+
+            graph_stale = ExMake.Cache.graph_cache_stale?(files)
+
+            pass_end.("Check Graph Cache")
+
+            g = if graph_stale do
                 g = construct_graph(mods, pass_go, pass_end)
+
+                pass_go.("Save Graph Cache")
 
                 # Cache the generated graph.
                 ExMake.Cache.save_graph(g)
 
+                pass_end.("Save Graph Cache")
+
                 g
             else
-                ExMake.Cache.load_graph()
+                pass_go.("Load Graph Cache")
+
+                g = ExMake.Cache.load_graph()
+
+                pass_end.("Load Graph Cache")
+
+                g
             end
 
             # Now create pruned graphs for each target and process them.
@@ -117,9 +159,9 @@ defmodule ExMake.Worker do
                 # Process leaves until the graph is empty. If we're running
                 # in --question mode, only check staleness of files.
                 if cfg.options()[:question] do
-                    process_graph_question(g2, pass_go, pass_end)
+                    process_graph_question(tgt, g2, pass_go, pass_end)
                 else
-                    process_graph(g2, pass_go, pass_end)
+                    process_graph(tgt, g2, pass_go, pass_end)
                 end
             end)
 
@@ -299,16 +341,16 @@ defmodule ExMake.Worker do
         g
     end
 
-    @spec process_graph(digraph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
-    defp process_graph(graph, pass_go, pass_end, n // 0) do
-        pass_go.("Compute Leaves (#{n})")
+    @spec process_graph(String.t(), digraph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
+    defp process_graph(target, graph, pass_go, pass_end, n // 0) do
+        pass_go.("Compute Leaves (#{target} - #{n})")
 
         # Compute the leaf vertices. These have no outgoing edges.
         leaves = Enum.filter(:digraph.vertices(graph), fn(v) -> :digraph.out_degree(graph, v) == 0 end)
 
-        pass_end.("Compute Leaves (#{n})")
+        pass_end.("Compute Leaves (#{target} - #{n})")
 
-        pass_go.("Enqueue Jobs (#{n})")
+        pass_go.("Enqueue Jobs (#{target} - #{n})")
 
         # Enqueue jobs for all leaves.
         Enum.each(leaves, fn(v) ->
@@ -319,9 +361,9 @@ defmodule ExMake.Worker do
             ExMake.Coordinator.enqueue(r)
         end)
 
-        pass_end.("Enqueue Jobs (#{n})")
+        pass_end.("Enqueue Jobs (#{target} - #{n})")
 
-        pass_go.("Wait for Jobs (#{n})")
+        pass_go.("Wait for Jobs (#{target} - #{n})")
 
         # Wait for all jobs to report back. This is not the most optimal
         # approach as we may end up waiting for one job to finish while,
@@ -345,22 +387,22 @@ defmodule ExMake.Worker do
             :digraph.del_vertex(graph, v)
         end)
 
-        pass_end.("Wait for Jobs (#{n})")
+        pass_end.("Wait for Jobs (#{target} - #{n})")
 
         # Process the next 'wave' of leaf nodes, if any.
-        if :digraph.no_vertices(graph) == 0, do: :ok, else: process_graph(graph, pass_go, pass_end, n + 1)
+        if :digraph.no_vertices(graph) == 0, do: :ok, else: process_graph(target, graph, pass_go, pass_end, n + 1)
     end
 
-    @spec process_graph_question(digraph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
-    defp process_graph_question(graph, pass_go, pass_end, n // 0) do
-        pass_go.("Compute Leaves (#{n})")
+    @spec process_graph_question(String.t(), digraph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
+    defp process_graph_question(target, graph, pass_go, pass_end, n // 0) do
+        pass_go.("Compute Leaves (#{target} - #{n})")
 
         # Compute the leaf vertices. These have no outgoing edges.
         leaves = Enum.filter(:digraph.vertices(graph), fn(v) -> :digraph.out_degree(graph, v) == 0 end)
 
-        pass_end.("Compute Leaves (#{n})")
+        pass_end.("Compute Leaves (#{target} - #{n})")
 
-        pass_go.("Check Timestamps (#{n})")
+        pass_go.("Check Timestamps (#{target} - #{n})")
 
         Enum.each(leaves, fn(v) ->
             {_, r} = :digraph.vertex(graph, v)
@@ -387,8 +429,8 @@ defmodule ExMake.Worker do
             :digraph.del_vertex(graph, v)
         end)
 
-        pass_end.("Check Timestamps (#{n})")
+        pass_end.("Check Timestamps (#{target} - #{n})")
 
-        if :digraph.no_vertices(graph) == 0, do: :ok, else: process_graph_question(graph, pass_go, pass_end, n + 1)
+        if :digraph.no_vertices(graph) == 0, do: :ok, else: process_graph_question(target, graph, pass_go, pass_end, n + 1)
     end
 end
