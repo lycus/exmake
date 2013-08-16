@@ -28,8 +28,7 @@ test:
 dialyze: ebin/exmake.app
 	$(DIALYZER) --no_check_plt -r ebin \
 		-Wunmatched_returns \
-		-Werror_handling \
-		-Wrace_conditions
+		-Werror_handling
 
 install: ebin/exmake
 	$(INSTALL) -m755 -d $(PREFIX)

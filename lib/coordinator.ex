@@ -96,9 +96,9 @@ defmodule ExMake.Coordinator do
     `:infinity` or a millisecond value specifying how much time to wait for the
     operation to complete.
     """
-    @spec apply_timer_fn(pid(), ((ExMake.Timer.session()) -> ExMake.Timer.session()), timeout()) :: :ok
-    def apply_timer_fn(pid, fun, timeout // :infinity) do
-        :gen_server.call(pid, {:apply_timer, fun}, timeout)
+    @spec apply_timer_fn(((ExMake.Timer.session()) -> ExMake.Timer.session()), timeout()) :: :ok
+    def apply_timer_fn(fun, timeout // :infinity) do
+        :gen_server.call(locate(), {:apply_timer, fun}, timeout)
         :ok
     end
 

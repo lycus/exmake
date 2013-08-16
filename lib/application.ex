@@ -22,9 +22,9 @@ defmodule ExMake.Application do
 
         Enum.each(inv, fn({opt, val}) ->
             ExMake.Logger.error("Invalid value '#{val}' for option '--#{opt}'")
-
-            System.halt(1)
         end)
+
+        if inv != [], do: System.halt(1)
 
         if opts[:version] do
             ExMake.Logger.info("ExMake - #{@app_version}")
