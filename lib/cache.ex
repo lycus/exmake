@@ -56,7 +56,7 @@ defmodule ExMake.Cache do
         ensure_cache_dir(dir)
 
         # Ensure that the table has been created.
-        ExMake.Env.put("EXMAKE_STAMP", :erlang.now())
+        ExMake.Env.put("EXMAKE_STAMP", inspect(:erlang.now()))
 
         path = Path.join(dir, "table.env")
 
