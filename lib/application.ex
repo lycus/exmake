@@ -30,7 +30,7 @@ defmodule ExMake.Application do
         end
 
         if opts[:help] do
-            ExMake.Logger.info("Usage: exmake [switches] [targets]")
+            ExMake.Logger.info("Usage: exmake [switches] [--] [targets]")
             ExMake.Logger.info("")
             ExMake.Logger.info("The default target is 'all'.")
             ExMake.Logger.info("")
@@ -45,6 +45,10 @@ defmodule ExMake.Application do
             ExMake.Logger.info("    --time, -t                      Print timing information.")
             ExMake.Logger.info("    --clear, -c                     Clear the graph and environment cache.")
             ExMake.Logger.info("    --args, -a <arguments []>       Pass all remaining arguments to libraries.")
+            ExMake.Logger.info("")
+            ExMake.Logger.info("If '--' is encountered anywhere before '--args', all remaining")
+            ExMake.Logger.info("arguments are parsed as if they're target names, even if they")
+            ExMake.Logger.info("contain dashes.")
             ExMake.Logger.info("")
         end
 
