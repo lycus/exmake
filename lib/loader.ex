@@ -23,7 +23,7 @@ defmodule ExMake.Loader do
         p = Path.join(dir, file)
 
         list = try do
-            Code.load_file(p)
+            File.cd!(dir, fn() -> Code.load_file(file) end)
         rescue
             ex in [Code.LoadError] ->
                 raise(ExMake.LoadError[file: file,
