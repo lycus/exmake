@@ -3,7 +3,7 @@ defmodule ExMake.Mixfile do
 
     def project() do
         [app: :exmake,
-         version: "0.1.0",
+         version: "0.0.0",
          escript_main_module: ExMake.Application,
          escript_path: Path.join("ebin", "exmake"),
          escript_emu_args: "%%! -noshell -noinput +B\n"]
