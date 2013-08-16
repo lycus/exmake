@@ -58,7 +58,10 @@ defmodule ExMake.File do
 
             if !ExMake.Cache.env_cached?() do
                 case unquote(lib_mod).__exmake__(:on_load) do
-                    {m, f} -> apply(m, f, [unquote(args)])
+                    {m, f} ->
+                        cargs = ExMake.Coordinator.get_config(ExMake.Coordinator.locate()).options()[:args] || []
+
+                        apply(m, f, [unquote(args), cargs])
                     nil -> :ok
                 end
             end
@@ -198,31 +201,6 @@ defmodule ExMake.File do
         end
     end
 
-    @doc """
-    Same as `rule/6`, but receives as a fourth argument the list of arguments passed
-    to ExMake via the `--args` option, if any.
-    """
-    defmacro rule(targets, sources, srcs_arg, tgts_arg, dir_arg, args_arg, [do: block]) do
-        srcs_arg = Macro.escape(srcs_arg)
-        tgts_arg = Macro.escape(tgts_arg)
-        dir_arg = Macro.escape(dir_arg)
-        args_arg = Macro.escape(args_arg)
-        block = Macro.escape(block)
-
-        quote bind_quoted: binding do
-            line = __ENV__.line()
-            fn_name = :"rule_#{length(@exmake_rules) + 1}_line_#{line}"
-
-            @doc false
-            def unquote(fn_name)(unquote(srcs_arg),
-                                 unquote(tgts_arg),
-                                 unquote(dir_arg),
-                                 unquote(args_arg)), do: unquote(block)
-
-            @exmake_rules Keyword.put([targets: targets, sources: sources], :recipe, {__MODULE__, fn_name, 4, line})
-        end
-    end
-
     @doc %B"""
     Defines a phony rule.
 
@@ -305,31 +283,6 @@ defmodule ExMake.File do
                                  unquote(dir_arg)), do: unquote(block)
 
             @exmake_phony_rules Keyword.put([name: name, sources: sources], :recipe, {__MODULE__, fn_name, 3, line})
-        end
-    end
-
-    @doc """
-    Same as `phony/6`, but receives as a fourth argument the list of arguments
-    passed to ExMake via the `--args` option, if any.
-    """
-    defmacro phony(name, sources, name_arg, srcs_arg, dir_arg, args_arg, [do: block]) do
-        name_arg = Macro.escape(name_arg)
-        srcs_arg = Macro.escape(srcs_arg)
-        dir_arg = Macro.escape(dir_arg)
-        args_arg = Macro.escape(args_arg)
-        block = Macro.escape(block)
-
-        quote bind_quoted: binding do
-            line = __ENV__.line()
-            fn_name = :"phony_rule_#{length(@exmake_phony_rules) + 1}_line_#{line}"
-
-            @doc false
-            def unquote(fn_name)(unquote(name_arg),
-                                 unquote(srcs_arg),
-                                 unquote(dir_arg),
-                                 unquote(args_arg)), do: unquote(block)
-
-            @exmake_phony_rules Keyword.put([name: name, sources: sources], :recipe, {__MODULE__, fn_name, 4, line})
         end
     end
 end

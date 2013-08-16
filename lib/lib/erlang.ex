@@ -7,7 +7,7 @@ defmodule ExMake.Lib.Erlang do
     url "https://github.com/lycus/exmake"
     author "Alex Rønne Petersen", "alex@lycus.org"
 
-    on_load args do
+    on_load args, _ do
         if erlc = args[:erlc] || find_exe("erlc", "ERLC") do
             put("ERLC", erlc)
         end

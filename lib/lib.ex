@@ -106,22 +106,27 @@ defmodule ExMake.Lib do
             end
         end
 
-    The argument to the `on_load` function is a list of terms, as originally given to
-    `ExMake.File.load_lib/2` or `ExMake.File.load_lib_qual/2`.
+    The first argument to the `on_load` function is a list of terms, as originally
+    given to `ExMake.File.load_lib/2` or `ExMake.File.load_lib_qual/2`. The second
+    argument is the list of arguments passed via the `--args` option to ExMake. In
+    general, libraries should avoid using the second argument - it is primarily
+    intended to be used in `configure`-like libraries written by users.
 
     Note that the `on_load` function will only be called when the environment table
     cache file does not exist. In other words, an `on_load` function should avoid
     having side-effects beyond setting variables in the environment table.
     """
-    defmacro on_load(args_arg, [do: block]) do
-        args_arg = Macro.escape(args_arg)
+    defmacro on_load(args1_arg, args2_arg, [do: block]) do
+        args1_arg = Macro.escape(args1_arg)
+        args2_arg = Macro.escape(args2_arg)
         block = Macro.escape(block)
 
         quote bind_quoted: binding do
             fn_name = :on_load
 
             @doc false
-            def unquote(fn_name)(unquote(args_arg)), do: unquote(block)
+            def unquote(fn_name)(unquote(args1_arg),
+                                 unquote(args2_arg)), do: unquote(block)
 
             @exmake_on_load {__MODULE__, fn_name}
         end

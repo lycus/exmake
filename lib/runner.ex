@@ -10,12 +10,12 @@ defmodule ExMake.Runner do
     Starts a runner process.
 
     `coordinator` must be the PID of a coordinator to send a finish notification
-    to. It is assumed to be a `:gen_server`. `cfg` must be an `ExMake.Config`
-    instance. `rule` must be the keyword list describing the rule. `owner` must
-    be a PID pointing to the process that should be notified once the job is done.
+    to. It is assumed to be a `:gen_server`. `rule` must be the keyword list
+    describing the rule. `owner` must be a PID pointing to the process that should
+    be notified once the job is done.
     """
-    @spec start(pid(), ExMake.Config.t(), Keyword.t(), pid()) :: pid()
-    def start(coordinator, cfg, rule, owner) do
+    @spec start(pid(), Keyword.t(), pid()) :: pid()
+    def start(coordinator, rule, owner) do
         spawn(fn() ->
             result = try do
                 {run, arg2} = if rule[:name] do
@@ -40,14 +40,6 @@ defmodule ExMake.Runner do
 
                     if a >= 3 do
                         rule_args = rule_args ++ [rule[:directory]]
-                    end
-
-                    if a >= 4 do
-                        args = cfg.options()[:args] || "" |>
-                               String.split(" ") |>
-                               Enum.filter(fn(s) -> String.strip(s) == "" end)
-
-                        rule_args = rule_args ++ [args]
                     end
 
                     cwd = File.cwd!()
