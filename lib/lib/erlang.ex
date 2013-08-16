@@ -16,15 +16,15 @@ defmodule ExMake.Lib.Erlang do
         list_put("ERLC_INCLUDES")
     end
 
-    defmacro erlang_flag(flag) do
+    defmacro erlc_flag(flag) do
         quote do: ExMake.Env.list_append("ERLC_FLAGS", unquote(flag))
     end
 
-    defmacro erlang_include(dir) do
+    defmacro erlc_include(dir) do
         quote do: ExMake.Env.list_append("ERLC_INCLUDES", unquote(dir))
     end
 
-    defmacro erlang(src, opts // []) do
+    defmacro erl(src, opts // []) do
         quote do
             src = unquote(src)
             srcs = [src] ++ (unquote(opts)[:headers] || [])
