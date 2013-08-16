@@ -1,6 +1,4 @@
-RM ?= rm
 INSTALL ?= install
-ELIXIR ?= elixir
 MIX ?= mix
 DIALYZER ?= dialyzer
 
