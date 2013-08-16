@@ -19,6 +19,6 @@ defmodule ExMake.Supervisor do
     def init(nil) do
         supervise([worker(ExMake.Worker, [], [restart: :temporary, shutdown: :infinity]),
                    worker(ExMake.Coordinator, [], [restart: :temporary, shutdown: :infinity])],
-                  [strategy: :one_for_one])
+                  [strategy: :one_for_all])
     end
 end
