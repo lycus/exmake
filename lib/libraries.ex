@@ -8,6 +8,7 @@ defmodule ExMake.Libraries do
 
     By default, ExMake looks for libraries in:
 
+    * `./exmake`
     * `/usr/local/lib/exmake`
     * `/usr/lib/exmake`
     * `/lib/exmake`
@@ -31,11 +32,13 @@ defmodule ExMake.Libraries do
         else
             p = [Path.join(["/usr", "local", "lib", "exmake"]),
                  Path.join(["/usr", "lib", "exmake"]),
-                 Path.join(["/lib", "exmake"])]
+                 Path.join("/lib", "exmake")]
 
             if s = System.get_env("HOME") do
                 p = [Path.join(s, ".exmake")] ++ p
             end
+
+            p = [Path.join(".", "exmake")] ++ p
 
             p
         end
