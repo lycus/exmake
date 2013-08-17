@@ -1,9 +1,9 @@
 defmodule ExMake.Cache do
     @moduledoc """
-    Provides functionality to persist dependency graphs and environment
-    tables to disk and load them back in. This is used to avoid creating
-    the DAG anew on every ExMake invocation, and to cache the results of
-    configuration passes in libraries.
+    Provides functionality to persist dependency graphs, environment
+    tables, and compiled script modules to disk and load them back in.
+    This is used to avoid a lot of the startup overhead that most
+    traditional Make-style tools suffer from.
     """
 
     @spec ensure_cache_dir(Path.t()) :: :ok
