@@ -76,44 +76,32 @@ defmodule ExMake.Worker do
         file = cfg.options()[:file] || "Exmakefile"
 
         code = try do
-            pass_go.("Check Environment Cache")
+            pass_go.("Check Cache Timestamps")
 
-            env_cached = ExMake.Cache.env_cached?()
+            stale = ExMake.Cache.cache_stale?()
 
-            pass_end.("Check Environment Cache")
+            pass_end.("Check Cache Timestamps")
 
-            if env_cached do
-                pass_go.("Load Environment Cache")
+            g = if stale do
+                pass_go.("Load Script Files")
 
-                ExMake.Cache.load_env()
+                mods = ExMake.Loader.load(".", file)
 
-                pass_end.("Load Environment Cache")
-            end
+                pass_end.("Load Script Files")
 
-            pass_go.("Load Script Files")
+                pass_go.("Save Module Cache")
 
-            mods = ExMake.Loader.load(".", file)
+                ExMake.Cache.save_mods(Enum.map(mods, fn({_, _, m, c}) -> {m, c} end))
 
-            pass_end.("Load Script Files")
+                pass_end.("Save Module Cache")
 
-            if !env_cached do
                 pass_go.("Save Environment Cache")
 
                 ExMake.Cache.save_env()
 
                 pass_end.("Save Environment Cache")
-            end
 
-            files = Enum.map(mods, fn({d, f, _}) -> Path.join(d, f) end)
-
-            pass_go.("Check Graph Cache")
-
-            graph_stale = ExMake.Cache.graph_cache_stale?(files)
-
-            pass_end.("Check Graph Cache")
-
-            g = if graph_stale do
-                g = construct_graph(mods, pass_go, pass_end)
+                g = construct_graph(Enum.map(mods, fn({d, f, m, _}) -> {d, f, m} end), pass_go, pass_end)
 
                 pass_go.("Save Graph Cache")
 
@@ -122,8 +110,26 @@ defmodule ExMake.Worker do
 
                 pass_end.("Save Graph Cache")
 
+                pass_go.("Save Cache Manifest")
+
+                ExMake.Cache.save_manifest(Enum.map(mods, fn({d, f, _, _}) -> Path.join(d, f) end))
+
+                pass_end.("Save Cache Manifest")
+
                 g
             else
+                pass_go.("Load Module Cache")
+
+                ExMake.Cache.load_mods()
+
+                pass_end.("Load Module Cache")
+
+                pass_go.("Load Environment Cache")
+
+                ExMake.Cache.load_env()
+
+                pass_end.("Load Environment Cache")
+
                 pass_go.("Load Graph Cache")
 
                 g = ExMake.Cache.load_graph()

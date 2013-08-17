@@ -5,16 +5,17 @@ defmodule ExMake.Loader do
 
     @doc """
     Loads script file `file` in directory `dir`. Returns a list of
-    `{dir, file, mod}` where `mod` is the name of the module containing
-    rules and recipes. Raises `ExMake.LoadError` if loading failed for
-    some reason. Raises `ExMake.ScriptError` if an `ExMake.File.recurse`
-    directive contained an invalid directory or file name. Raises
-    `ExMake.UsageError` if `file` is invalid.
+    `{dir, file, mod, bin}` where `mod` is the name of the module containing
+    rules and recipes and `bin` is the bytecode of the module. Raises
+    `ExMake.LoadError` if loading failed for some reason. Raises
+    `ExMake.ScriptError` if an `ExMake.File.recurse` directive contained
+    an invalid directory or file name. Raises `ExMake.UsageError` if `file`
+    is invalid.
 
     `dir` must be a path to a directory. `file` must be the name of the
     file to load in `dir`.
     """
-    @spec load(Path.t(), Path.t()) :: [{Path.t(), Path.t(), module()}, ...]
+    @spec load(Path.t(), Path.t()) :: [{Path.t(), Path.t(), module(), binary()}, ...]
     def load(dir, file // "Exmakefile") do
         if String.contains?(file, ["\\", "/"]) do
             raise(ExMake.UsageError[description: "Script file name '#{file}' contains path separator"])
@@ -37,8 +38,7 @@ defmodule ExMake.Loader do
                                        description: ex.message()])
         end
 
-        mods = Enum.map(list, fn({x, _}) -> x end)
-        cnt = Enum.count(mods, fn(x) -> atom_to_binary(x) |> String.ends_with?(".Exmakefile") end)
+        cnt = Enum.count(list, fn({x, _}) -> atom_to_binary(x) |> String.ends_with?(".Exmakefile") end)
 
         cond do
             cnt == 0 ->
@@ -54,7 +54,7 @@ defmodule ExMake.Loader do
             true -> :ok
         end
 
-        mod = Enum.fetch!(mods, 0)
+        {mod, bin} = Enum.fetch!(list, 0)
         rec = mod.__exmake__(:subdirectories)
 
         Enum.each(rec, fn({sub, file}) ->
@@ -79,6 +79,6 @@ defmodule ExMake.Loader do
                 Enum.map(fn({d, f}) -> load(Path.join(dir, d), f) end) |>
                 List.flatten()
 
-        [{dir, file, mod} | lists]
+        [{dir, file, mod, bin} | lists]
     end
 end

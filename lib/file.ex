@@ -56,14 +56,12 @@ defmodule ExMake.File do
         quote do
             {:module, _} = Code.ensure_loaded(unquote(lib_mod))
 
-            if !ExMake.Cache.env_cached?() do
-                case unquote(lib_mod).__exmake__(:on_load) do
-                    {m, f} ->
-                        cargs = ExMake.Coordinator.get_config().args()
+            case unquote(lib_mod).__exmake__(:on_load) do
+                {m, f} ->
+                    cargs = ExMake.Coordinator.get_config().args()
 
-                        apply(m, f, [unquote(args), cargs])
-                    nil -> :ok
-                end
+                    apply(m, f, [unquote(args), cargs])
+                nil -> :ok
             end
 
             require unquote(lib_mod)
