@@ -54,7 +54,7 @@ defmodule ExMake.Runner do
 
                     if (ncwd = File.cwd!()) != cwd do
                         r = inspect(ExMake.Helpers.make_presentable(rule))
-                        msg = "Recipe for rule #{r} changed directory from '#{cwd}' to '#{ncwd}' without changing back"
+                        msg = "Recipe for rule #{r} changed directory from '#{cwd}' to '#{ncwd}'"
 
                         raise(ExMake.ScriptError[description: msg])
                     end
