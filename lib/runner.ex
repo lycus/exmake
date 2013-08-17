@@ -58,6 +58,17 @@ defmodule ExMake.Runner do
 
                         raise(ExMake.ScriptError[description: msg])
                     end
+
+                    if tgts = rule[:targets] do
+                        Enum.each(tgts, fn(tgt) ->
+                            if !File.exists?(tgt) do
+                                r = inspect(ExMake.Helpers.make_presentable(rule))
+                                msg = "Recipe for rule #{r} did not produce #{tgt} as expected"
+
+                                raise(ExMake.ScriptError[description: msg])
+                            end
+                        end)
+                    end
                 end
 
                 :ok
