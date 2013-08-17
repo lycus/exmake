@@ -21,16 +21,20 @@ defmodule ExMake.Lib.Elixir do
 
     defmacro ex(src, mods, opts // []) do
         quote do
-            srcs = [unquote(src)] ++ (unquote(opts)[:deps] || [])
-            mods = Enum.map(unquote(mods), fn(m) -> m <> ".beam" end)
+            @exm_elixir_opts unquote(opts)
+
+            src = unquote(src)
+            srcs = [src] ++ (@exm_elixir_opts[:deps] || [])
+            mods = unquote(mods) |>
+                   Enum.map(fn(m) -> m <> ".beam" end) |>
+                   Enum.map(fn(m) -> (@exm_erlang_opts[:output_dir] || Path.dirname(src)) |>
+                                     Path.join(m) end)
 
             rule mods,
                  srcs,
                  [src | _], _, dir do
-                opts = unquote(opts)
-
-                flags = Enum.join(opts[:flags] || [], " ")
-                output_dir = if s = opts[:output_dir], do: Path.join(dir, s), else: Path.dirname(src)
+                flags = Enum.join(@exm_elixir_opts[:flags] || [], " ")
+                output_dir = if s = @exm_elixir_opts[:output_dir], do: Path.join(dir, s), else: Path.dirname(src)
 
                 shell("${ELIXIRC} ${ELIXIRC_FLAGS} #{flags} -o #{output_dir} #{src}")
             end

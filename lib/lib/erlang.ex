@@ -26,17 +26,19 @@ defmodule ExMake.Lib.Erlang do
 
     defmacro erl(src, opts // []) do
         quote do
-            src = unquote(src)
-            srcs = [src] ++ (unquote(opts)[:headers] || [])
+            @exm_erlang_opts unquote(opts)
 
-            rule [Path.rootname(src) <> ".beam"],
+            src = unquote(src)
+            srcs = [src] ++ (@exm_erlang_opts[:headers] || [])
+            tgt = (@exm_erlang_opts[:output_dir] || Path.dirname(src)) |>
+                  Path.join(Path.rootname(Path.basename(src)) <> ".beam")
+
+            rule [tgt],
                  srcs,
                  [src | _], _, dir do
-                opts = unquote(opts)
-
-                flags = Enum.join(opts[:flags] || [], " ")
-                output_dir = if s = opts[:output_dir], do: Path.join(dir, s), else: Path.dirname(src)
-                includes = list_get("ERLC_INCLUDES") ++ (opts[:includes] || []) |>
+                flags = Enum.join(@exm_erlang_opts[:flags] || [], " ")
+                output_dir = if s = @exm_erlang_opts[:output_dir], do: Path.join(dir, s), else: Path.dirname(src)
+                includes = list_get("ERLC_INCLUDES") ++ (@exm_erlang_opts[:includes] || []) |>
                            Enum.map(fn(i) -> "-I #{Path.join(dir, i)}" end) |>
                            Enum.join(" ")
 
