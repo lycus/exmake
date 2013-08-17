@@ -65,6 +65,8 @@ defmodule ExMake.Worker do
 
         file = cfg.options()[:file] || "Exmakefile"
 
+        Process.put(:exmake_jobs, 0)
+
         code = try do
             File.cd!(Path.dirname(file))
 
@@ -216,6 +218,16 @@ defmodule ExMake.Worker do
             ex ->
                 ExMake.Logger.error(inspect(elem(ex, 0)), ex.message())
                 ExMake.Logger.debug(Exception.format_stacktrace(System.stacktrace()))
+
+                # Wait for all remaining jobs to stop.
+                if (n = Process.get(:exmake_jobs)) > 0 do
+                    Enum.each(1 .. n, fn(_) ->
+                        receive do
+                            {:exmake_done, _, _} -> :ok
+                        end
+                    end)
+                end
+
                 1
         end
 
@@ -411,6 +423,8 @@ defmodule ExMake.Worker do
             ExMake.Coordinator.enqueue(r)
         end)
 
+        Process.put(:exmake_jobs, length(leaves))
+
         pass_end.("Enqueue Jobs (#{target} - #{n})")
 
         pass_go.("Wait for Jobs (#{target} - #{n})")
@@ -427,6 +441,8 @@ defmodule ExMake.Worker do
             end
 
             ExMake.Logger.debug("Job done for rule: #{inspect(rule)}")
+
+            Process.put(:exmake_jobs, Process.get(:exmake_jobs) - 1)
 
             if ex, do: raise(ex)
 
