@@ -65,14 +65,6 @@ defmodule ExMake.Loader do
             if !String.valid?(file) do
                 raise(ExMake.ScriptError[description: "Subdirectory file must be a string"])
             end
-
-            if String.contains?(sub, ["\\", "/"]) do
-                raise(ExMake.ScriptError[description: "Subdirectory path '#{sub}' contains path separator"])
-            end
-
-            if String.contains?(file, ["\\", "/"]) do
-                raise(ExMake.ScriptError[description: "Subdirectory file '#{file}' contains path separator"])
-            end
         end)
 
         lists = rec |>
