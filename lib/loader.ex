@@ -17,10 +17,6 @@ defmodule ExMake.Loader do
     """
     @spec load(Path.t(), Path.t()) :: [{Path.t(), Path.t(), module(), binary()}, ...]
     def load(dir, file // "Exmakefile") do
-        if String.contains?(file, ["\\", "/"]) do
-            raise(ExMake.UsageError[description: "Script file name '#{file}' contains path separator"])
-        end
-
         p = Path.join(dir, file)
 
         list = try do

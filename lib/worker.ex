@@ -50,8 +50,6 @@ defmodule ExMake.Worker do
     @doc false
     @spec handle_call(:work, {pid(), term()}, nil) :: {:reply, non_neg_integer(), nil}
     def handle_call(:work, _, nil) do
-        Enum.each(ExMake.Libraries.search_paths(), fn(x) -> ExMake.Libraries.append_path(x) end)
-
         cfg = ExMake.Coordinator.get_config()
 
         if cfg.options()[:time] do
@@ -65,22 +63,36 @@ defmodule ExMake.Worker do
             pass_end = fn(_) -> end
         end
 
-        if cfg.options()[:clear] do
-            pass_go.("Clear Build Cache")
-
-            ExMake.Cache.clear_cache()
-
-            pass_end.("Clear Build Cache")
-        end
-
         file = cfg.options()[:file] || "Exmakefile"
 
         code = try do
-            pass_go.("Check Cache Timestamps")
+            File.cd!(Path.dirname(file))
 
-            stale = ExMake.Cache.cache_stale?()
+            pass_go.("Set Library Paths")
 
-            pass_end.("Check Cache Timestamps")
+            Enum.each(ExMake.Libraries.search_paths(), fn(x) -> ExMake.Libraries.append_path(x) end)
+
+            pass_end.("Set Library Paths")
+
+            # Slight optimization: If we're clearing the
+            # cache, then it's definitely stale.
+            stale = if cfg.options()[:clear] do
+                pass_go.("Clear Build Cache")
+
+                ExMake.Cache.clear_cache()
+
+                pass_end.("Clear Build Cache")
+
+                true
+            else
+                pass_go.("Check Cache Timestamps")
+
+                stale = ExMake.Cache.cache_stale?()
+
+                pass_end.("Check Cache Timestamps")
+
+                stale
+            end
 
             g = if stale do
                 pass_go.("Load Script Files")
@@ -206,6 +218,8 @@ defmodule ExMake.Worker do
                 ExMake.Logger.debug(Exception.format_stacktrace(System.stacktrace()))
                 1
         end
+
+        File.cd!("..")
 
         {:reply, code, nil}
     end
