@@ -39,6 +39,19 @@ defmodule ExMake.Helpers do
         end)
     end
 
+    @doc """
+    Makes a given rule user-presentable by removing internal keyword list elements.
+
+    `rule` must be the keyword list describing the rule.
+    """
+    @spec make_presentable(Keyword.t()) :: Keyword.t()
+    def make_presentable(rule) do
+        rule |>
+        Keyword.delete(:recipe) |>
+        Keyword.delete(:directory) |>
+        Keyword.delete(:real_sources)
+    end
+
     @doc false
     @spec get_exmake_version() :: String.t()
     def get_exmake_version() do

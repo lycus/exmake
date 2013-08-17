@@ -19,6 +19,12 @@ defmodule ExMake.Runner do
         spawn(fn() ->
             result = try do
                 {run, arg2} = if rule[:name] do
+                    Enum.each(rule[:real_sources], fn(src) ->
+                        if !File.exists?(src) do
+                            raise(ExMake.UsageError[description: "No rule to make target '#{src}'"])
+                        end
+                    end)
+
                     {true, rule[:name]}
                 else
                     Enum.each(rule[:sources], fn(src) ->
@@ -47,11 +53,7 @@ defmodule ExMake.Runner do
                     apply(m, f, rule_args)
 
                     if (ncwd = File.cwd!()) != cwd do
-                        r = rule |>
-                            Keyword.delete(:recipe) |>
-                            Keyword.delete(:directory) |>
-                            inspect()
-
+                        r = inspect(ExMake.Helpers.make_presentable(rule))
                         msg = "Recipe for rule #{r} changed directory from '#{cwd}' to '#{ncwd}' without changing back"
 
                         raise(ExMake.ScriptError[description: msg])

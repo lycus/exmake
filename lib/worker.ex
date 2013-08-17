@@ -270,13 +270,27 @@ defmodule ExMake.Worker do
 
         pass_go.("Check Phony Rule Names")
 
-        Enum.each(phony_rules, fn(p) ->
-            if Set.member?(target_names, n = p[:name]) do
+        phony_names = Enum.reduce(phony_rules, HashSet.new(), fn(p, set) ->
+            n = p[:name]
+
+            if Set.member?(target_names, n) do
                 raise(ExMake.ScriptError[description: "Phony rule name '#{n}' conflicts with a rule"])
             end
+
+            Set.put(set, n)
         end)
 
         pass_end.("Check Phony Rule Names")
+
+        pass_go.("Determine Phony Rule Sources")
+
+        phony_rules = Enum.map(phony_rules, fn(r) ->
+            srcs = Set.difference(HashSet.new(r[:sources]), phony_names)
+
+            Keyword.put(r, :real_sources, srcs)
+        end)
+
+        pass_end.("Determine Phony Rule Sources")
 
         g = :digraph.new([:acyclic])
 
@@ -311,10 +325,7 @@ defmodule ExMake.Worker do
                     {v2, r2} = dep
 
                     if r[:targets] && (n = r2[:name]) do
-                        r = r |>
-                            Keyword.delete(:recipe) |>
-                            Keyword.delete(:directory) |>
-                            inspect()
+                        r = inspect(ExMake.Helpers.make_presentable(r))
 
                         raise(ExMake.ScriptError[description: "Rule #{r} depends on phony rule '#{n}'"])
                     end
@@ -323,8 +334,7 @@ defmodule ExMake.Worker do
                         {:error, {:bad_edge, path}} ->
                             [r1, r2] = [:digraph.vertex(g, hd(path)), :digraph.vertex(g, List.last(path))] |>
                                        Enum.map(fn(x) -> elem(x, 1) end) |>
-                                       Enum.map(fn(x) -> Keyword.delete(x, :recipe) end) |>
-                                       Enum.map(fn(x) -> Keyword.delete(x, :directory) end) |>
+                                       Enum.map(fn(x) -> ExMake.Helpers.make_presentable(x) end) |>
                                        Enum.map(fn(x) -> inspect(x) end)
 
                             msg = "Cyclic dependency detected between\n#{r1}\nand\n#{r2}"
