@@ -6,6 +6,9 @@ defmodule ExMake.Libraries do
     By convention, such modules begin with `ExMake.Lib.` and are followed by
     some named describing what the module contains, e.g. `ExMake.Lib.C`.
 
+    Further, libraries are free to use all attributes that begin with
+    `@exm_foo_` where `foo` is the lowercase name of the library `Foo`.
+
     By default, ExMake looks for libraries in:
 
     * `./exmake`
