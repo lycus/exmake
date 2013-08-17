@@ -62,17 +62,19 @@ defmodule ExMake.Runner do
 
                 :ok
             catch
-                val -> {:throw, val}
+                val -> {:throw, val, System.stacktrace()}
             rescue
-                ex -> {:raise, ex}
+                ex -> {:raise, ex, System.stacktrace()}
             end
 
             if result != :ok do
                 ExMake.Logger.debug("Caught #{elem(result, 0)} in runner: #{inspect(elem(result, 1))}")
-                ExMake.Logger.debug(Exception.format_stacktrace(System.stacktrace()))
+                ExMake.Logger.debug(Exception.format_stacktrace(elem(result, 2)))
 
                 # If the recipe failed, remove all target files.
                 if tgts = rule[:targets], do: Enum.each(tgts, fn(tgt) -> File.rm(tgt) end)
+
+                result = delete_elem(result, 2)
             end
 
             :gen_server.call(coordinator, {:done, rule, owner, result}, :infinity)
