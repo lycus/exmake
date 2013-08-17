@@ -298,7 +298,11 @@ defmodule ExMake.Worker do
 
         pass_end.("Determine Phony Rule Sources")
 
+        pass_go.("Create DAG")
+
         g = :digraph.new([:acyclic])
+
+        pass_end.("Create DAG")
 
         pass_go.("Create DAG Vertices")
 
