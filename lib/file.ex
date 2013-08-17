@@ -20,7 +20,8 @@ defmodule ExMake.File do
     source and target file lists based on external factors such as system
     environment variables. The dependency graph that is generated based on
     a script file is cached, so if external factors influence the graph's
-    layout, ExMake won't pick up the changes.
+    layout, ExMake won't pick up the changes. It is, however, acceptable to
+    base the layout on files declared with `manifest/1`.
     """
 
     @doc false
@@ -35,6 +36,7 @@ defmodule ExMake.File do
             Module.register_attribute(__MODULE__, :exmake_subdirectories, [accumulate: true, persist: true])
             Module.register_attribute(__MODULE__, :exmake_rules, [accumulate: true, persist: true])
             Module.register_attribute(__MODULE__, :exmake_phony_rules, [accumulate: true, persist: true])
+            Module.register_attribute(__MODULE__, :exmake_manifest, [accumulate: true, persist: true])
         end
     end
 
@@ -44,6 +46,7 @@ defmodule ExMake.File do
             def __exmake__(:subdirectories), do: Enum.reverse(@exmake_subdirectories)
             def __exmake__(:rules), do: Enum.reverse(@exmake_rules)
             def __exmake__(:phony_rules), do: Enum.reverse(@exmake_phony_rules)
+            def __exmake__(:manifest), do: Enum.reverse(@exmake_manifest)
         end
     end
 
@@ -83,6 +86,37 @@ defmodule ExMake.File do
 
             import unquote(lib_mod)
         end
+    end
+
+    @doc """
+    Declares a file that is part of the cached manifest.
+
+    Example:
+
+        # ExMake cannot see that the script file
+        # depends on the my_file.exs file.
+        Code.require_file "my_file.exs", __DIR__
+
+        defmodule MyProject.Exmakefile do
+            use ExMake.File
+
+            # Declare that if my_file.exs changes
+            # the cache should be invalidated.
+            manifest "my_file.exs"
+
+            # ...
+        end
+
+    This is useful to tell ExMake about non-script files that should be considered
+    part of the manifest used to determine whether the cache should be invalidated.
+    Such non-script files are typically not referenced directly (via `recurse/2`)
+    and so ExMake is not aware that if they change, the behavior of the entire
+    build can change. When those files are declared with this macro, ExMake will
+    correctly invalidate the cache if they change, forcing a new evaluation of the
+    script file(s).
+    """
+    defmacro manifest(file) do
+        quote do: @exmake_manifest unquote(file)
     end
 
     @doc %B"""

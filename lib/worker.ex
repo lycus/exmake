@@ -110,9 +110,25 @@ defmodule ExMake.Worker do
 
                 pass_end.("Save Graph Cache")
 
+                pass_go.("Check Manifest Specifications")
+
+                manifest_files = List.concat(Enum.map(mods, fn({d, _, m, _}) ->
+                    Enum.map(m.__exmake__(:manifest), fn(file) ->
+                        if !String.valid?(file) do
+                            raise(ExMake.ScriptError[description: "Manifest file must be a string"])
+                        end
+
+                        Path.join(d, file)
+                    end)
+                end))
+
+                pass_end.("Check Manifest Specifications")
+
                 pass_go.("Save Cache Manifest")
 
-                ExMake.Cache.save_manifest(Enum.map(mods, fn({d, f, _, _}) -> Path.join(d, f) end))
+                manifest_mods = Enum.map(mods, fn({d, f, _, _}) -> Path.join(d, f) end)
+
+                ExMake.Cache.save_manifest(manifest_mods ++ manifest_files)
 
                 pass_end.("Save Cache Manifest")
 
