@@ -53,10 +53,14 @@ defmodule ExMake.Libraries do
     """
     @spec append_path(Path.t()) :: :ok | :error
     def append_path(path) do
-        case Code.append_path(path) do
+        p = path |>
+            Path.expand() |>
+            Path.absname()
+
+        case Code.append_path(p) do
             true -> :ok
             {:error, r} ->
-                ExMake.Logger.debug("Could not add code path #{path}: #{r}")
+                ExMake.Logger.debug("Could not add code path #{path} (#{p}): #{r}")
                 :error
         end
     end
