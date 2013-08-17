@@ -31,7 +31,7 @@ defmodule ExMake.Lib.Erlang do
 
             rule [Path.rootname(src) <> ".beam"],
                  srcs,
-                 [src], _, dir do
+                 [src | _], _, dir do
                 opts = unquote(opts)
 
                 flags = Enum.join(opts[:flags] || [], " ")
