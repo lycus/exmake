@@ -27,9 +27,12 @@ defmodule ExMake.Lib.Elixir do
             rule mods,
                  srcs,
                  [src | _], _, dir do
-                flags = Enum.join(unquote(opts)[:flags] || [], " ")
+                opts = unquote(opts)
 
-                shell("${ELIXIRC} ${ELIXIRC_FLAGS} #{flags} -o #{Path.dirname(src)} #{src}")
+                flags = Enum.join(opts[:flags] || [], " ")
+                output_dir = if s = opts[:output_dir], do: Path.join(dir, s), else: Path.dirname(src)
+
+                shell("${ELIXIRC} ${ELIXIRC_FLAGS} #{flags} -o #{output_dir} #{src}")
             end
         end
     end

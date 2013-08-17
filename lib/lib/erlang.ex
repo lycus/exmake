@@ -35,11 +35,12 @@ defmodule ExMake.Lib.Erlang do
                 opts = unquote(opts)
 
                 flags = Enum.join(opts[:flags] || [], " ")
+                output_dir = if s = opts[:output_dir], do: Path.join(dir, s), else: Path.dirname(src)
                 includes = list_get("ERLC_INCLUDES") ++ (opts[:includes] || []) |>
                            Enum.map(fn(i) -> "-I #{Path.join(dir, i)}" end) |>
                            Enum.join(" ")
 
-                shell("${ERLC} ${ERLC_FLAGS} #{flags} #{includes} -o #{Path.dirname(src)} #{src}")
+                shell("${ERLC} ${ERLC_FLAGS} #{flags} #{includes} -o #{output_dir} #{src}")
             end
         end
     end
