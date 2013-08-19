@@ -29,7 +29,7 @@ defmodule ExMake.Lib.Elixir do
             srcs = [src] ++ (@exm_elixir_opts[:deps] || [])
             mods = unquote(mods) |>
                    Enum.map(fn(m) -> m <> ".beam" end) |>
-                   Enum.map(fn(m) -> (@exm_erlang_opts[:output_dir] || Path.dirname(src)) |>
+                   Enum.map(fn(m) -> (@exm_elixir_opts[:output_dir] || Path.dirname(src)) |>
                                      Path.join(m) end)
 
             rule mods,
