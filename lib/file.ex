@@ -67,6 +67,8 @@ defmodule ExMake.File do
                 nil -> :ok
             end
 
+            ExMake.Coordinator.add_library(unquote(lib_mod))
+
             require unquote(lib_mod)
         end
     end

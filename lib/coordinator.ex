@@ -10,13 +10,21 @@ defmodule ExMake.Coordinator do
                         {:get_cfg} |
                         {:enqueue, Keyword.t(), pid()} |
                         {:done, Keyword.t(), pid(), :ok | tuple()} |
-                        {:apply_timer, ((ExMake.Timer.session()) -> ExMake.Timer.session())}
+                        {:apply_timer, ((ExMake.Timer.session()) -> ExMake.Timer.session())} |
+                        {:get_libs} |
+                        {:add_lib, module()} |
+                        {:del_lib, module()} |
+                        {:clear_libs}
 
     @typep reply() :: {:set_cfg} |
                       {:get_cfg, ExMake.Config.t()} |
                       {:enqueue} |
                       {:done} |
-                      {:apply_timer}
+                      {:apply_timer} |
+                      {:get_libs, [module()]} |
+                      {:add_lib} |
+                      {:del_lib} |
+                      {:clear_libs}
 
     @doc """
     Starts a coordinator process linked to the parent process. Returns
@@ -102,6 +110,57 @@ defmodule ExMake.Coordinator do
         :ok
     end
 
+    @doc """
+    Gets the list of libraries loaded by the current script files. Note that this
+    list is empty in the case where cached modules are used.
+
+    `timeout` must be `:infinity` or a millisecond value specifying how much time
+    to wait for the operation to complete.
+    """
+    @spec get_libraries(timeout()) :: [module()]
+    def get_libraries(timeout // :infinity) do
+        {:get_libs, libs} = :gen_server.call(locate(), {:get_libs}, timeout)
+        libs
+    end
+
+    @doc """
+    Adds a given library to the list of loaded libraries.
+
+    `module` must be an atom representing a loaded module. `timeout` must be
+    `:infinity` or a millisecond value specifying how much time to wait for the
+    operation to complete.
+    """
+    @spec add_library(module(), timeout()) :: :ok
+    def add_library(module, timeout // :infinity) do
+        :gen_server.call(locate(), {:add_lib, module}, timeout)
+        :ok
+    end
+
+    @doc """
+    Removes a given library from the list of loaded libraries.
+
+    `module` must be an atom representing a loaded module. `timeout` must be
+    `:infinity` or a millisecond value specifying how much time to wait for the
+    operation to complete.
+    """
+    @spec remove_library(module(), timeout()) :: :ok
+    def remove_library(module, timeout // :infinity) do
+        :gen_server.call(locate(), {:del_lib, module}, timeout)
+        :ok
+    end
+
+    @doc """
+    Clears the list of loaded libraries.
+
+    `timeout` must be `:infinity` or a millisecond value specifying how much time
+    to wait for the operation to complete.
+    """
+    @spec clear_libraries(timeout()) :: :ok
+    def clear_libraries(timeout // :infinity) do
+        :gen_server.call(locate(), {:clear_libs}, timeout)
+        :ok
+    end
+
     @doc false
     @spec handle_call(request(), {pid(), term()}, ExMake.State.t()) :: {:reply, reply(), ExMake.State.t()}
     def handle_call(msg, {sender, _}, state) do
@@ -140,6 +199,17 @@ defmodule ExMake.Coordinator do
             {:apply_timer, fun} ->
                 state = state.timing(fun.(state.timing()))
                 {:apply_timer}
+            {:get_libs} ->
+                {:get_libs, Set.to_list(state.libraries())}
+            {:add_lib, lib} ->
+                state = state.libraries(Set.put(state.libraries(), lib))
+                {:add_lib}
+            {:del_lib, lib} ->
+                state = state.libraries(Set.delete(state.libraries(), lib))
+                {:del_lib}
+            {:clear_libs} ->
+                state = state.libraries(HashSet.new())
+                {:clear_libs}
         end
 
         {:reply, reply, state}

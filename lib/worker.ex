@@ -50,6 +50,8 @@ defmodule ExMake.Worker do
     @doc false
     @spec handle_call(:work, {pid(), term()}, nil) :: {:reply, non_neg_integer(), nil}
     def handle_call(:work, _, nil) do
+        ExMake.Coordinator.clear_libraries()
+
         cfg = ExMake.Coordinator.get_config()
 
         if cfg.options()[:time] do
@@ -97,6 +99,22 @@ defmodule ExMake.Worker do
             end
 
             g = if stale do
+                # If the cache is stale and the configuration
+                # files exist, we should still load them and
+                # attempt to use them since we'll be running
+                # all sorts of configuration logic again.
+                if ExMake.Cache.config_cached?() do
+                    pass_go.("Load Configuration Cache")
+
+                    {args, vars} = ExMake.Cache.load_config()
+
+                    Enum.each(vars, fn({k, v}) -> if !System.get_env(k), do: System.put_env(k, v) end)
+
+                    if cfg.args() == [], do: ExMake.Coordinator.set_config(cfg = cfg.args(args))
+
+                    pass_end.("Load Configuration Cache")
+                end
+
                 pass_go.("Load Script Files")
 
                 mods = ExMake.Loader.load(".", file)
@@ -123,6 +141,18 @@ defmodule ExMake.Worker do
                 ExMake.Cache.save_graph(g)
 
                 pass_end.("Save Graph Cache")
+
+                pass_go.("Save Configuration Cache")
+
+                vars = ExMake.Coordinator.get_libraries() |>
+                       Enum.map(fn(m) -> m.__exmake__(:precious) end) |>
+                       List.concat() |>
+                       Enum.map(fn(v) -> {v, System.get_env(v)} end) |>
+                       Enum.filter(fn({_, v}) -> v end)
+
+                ExMake.Cache.save_config(cfg.args(), vars)
+
+                pass_end.("Save Configuration Cache")
 
                 pass_go.("Check Manifest Specifications")
 

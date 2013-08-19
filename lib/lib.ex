@@ -39,6 +39,7 @@ defmodule ExMake.Lib do
             Module.register_attribute(__MODULE__, :exmake_url, [persist: true])
             Module.register_attribute(__MODULE__, :exmake_authors, [accumulate: true, persist: true])
             Module.register_attribute(__MODULE__, :exmake_on_load, [persist: true])
+            Module.register_attribute(__MODULE__, :exmake_precious, [accumulate: true, persist: true])
         end
     end
 
@@ -51,6 +52,7 @@ defmodule ExMake.Lib do
             def __exmake__(:url), do: @exmake_url
             def __exmake__(:authors), do: Enum.reverse(@exmake_authors)
             def __exmake__(:on_load), do: @exmake_on_load
+            def __exmake__(:precious), do: Enum.reverse(@exmake_precious)
         end
     end
 
@@ -130,5 +132,32 @@ defmodule ExMake.Lib do
 
             @exmake_on_load {__MODULE__, fn_name}
         end
+    end
+
+    @doc """
+    Declares an environment variable as precious.
+
+    Example:
+
+        defmodule ExMake.Lib.Foo do
+            use ExMake.Lib
+
+            precious "CC"
+
+            on_load _ do
+                if cc = args[:cc] || find_exe("cc", "CC") do
+                    put("CC", cc)
+                end
+            end
+        end
+
+    This causes the variable to be saved in the configuration cache. This is useful
+    to ensure that the same values are used in environment variables when ExMake
+    executes configuration checks anew because of a stale cache.
+
+    Note that only environment variables that are actually set will be cached.
+    """
+    defmacro precious(var) do
+        quote do: @exmake_precious unquote(var)
     end
 end

@@ -22,7 +22,9 @@ defmodule ExMake.Cache do
          Path.join(dir, "edges.dag"),
          Path.join(dir, "neighbors.dag"),
          Path.join(dir, "table.env"),
-         Path.join(dir, "manifest.lst")]
+         Path.join(dir, "manifest.lst"),
+         Path.join(dir, "config.env"),
+         Path.join(dir, "config.arg")]
     end
 
     @spec get_manifest_list(Path.t()) :: [Path.t()]
@@ -210,7 +212,8 @@ defmodule ExMake.Cache do
 
     @doc """
     Saves the given list of modules to the given
-    cache directory.
+    cache directory. Raises `ExMake.CacheError` if
+    something went wrong.
 
     `mods` must be a list of `{mod, bin}` pairs, where
     `mod` is the module name and `bin` is the bytecode.
@@ -234,6 +237,7 @@ defmodule ExMake.Cache do
 
     @doc """
     Loads all modules in the given cache directory.
+    Raises `ExMake.CacheError` if something went wrong.
 
     `dir` must be the path to the cache directory.
     """
@@ -249,5 +253,90 @@ defmodule ExMake.Cache do
                 _ -> :ok
             end
         end)
+    end
+
+    @doc """
+    Saves the given configuration arguments and
+    environment variables to the given cache directory.
+    Raises `ExMake.CacheError` if something went wrong.
+
+    `args` must be a list of strings. `vars` must be a
+    list of key/value pairs mapping environment variable
+    names to values. `dir` must be the path to the cache
+    directory.
+    """
+    @spec save_config([String.t()], [{String.t(), String.t()}], Path.t()) :: :ok
+    def save_config(args, vars, dir // ".exmake") do
+        ensure_cache_dir(dir)
+
+        path_arg = Path.join(dir, "config.arg")
+        path_env = Path.join(dir, "config.env")
+
+        args = args |>
+               Enum.map(fn(x) -> iolist_to_binary(:io_lib.format('~p.~n', [x])) end) |>
+               Enum.join()
+
+        vars = vars |>
+               Enum.map(fn(x) -> iolist_to_binary(:io_lib.format('~p.~n', [x])) end) |>
+               Enum.join()
+
+        case File.write(path_arg, args) do
+            {:error, r} ->
+                ExMake.Logger.debug("Failed to save configuration arguments file '#{path_arg}': #{inspect(r)}")
+                raise(ExMake.CacheError[description: "Could not save configuration arguments file '#{path_arg}'"])
+            :ok -> :ok
+        end
+
+        case File.write(path_env, vars) do
+            {:error, r} ->
+                ExMake.Logger.debug("Failed to save configuration variables file '#{path_env}': #{inspect(r)}")
+                raise(ExMake.CacheError[description: "Could not save configuration variables file '#{path_env}'"])
+            :ok -> :ok
+        end
+    end
+
+    @doc """
+    Loads the configuration arguments and environment
+    variables from the given cache directory. Raises
+    `ExMake.CacheError` if something went wrong.
+
+    `dir` must be the path to the cache directory.
+    """
+    @spec load_config(Path.t()) :: {[String.t()], [{String.t(), String.t()}]}
+    def load_config(dir // ".exmake") do
+        path_arg = Path.join(dir, "config.arg")
+        path_env = Path.join(dir, "config.env")
+
+        args = case :file.consult(path_arg) do
+            {:error, r} ->
+                r = if is_tuple(r) && tuple_size(r) == 3, do: :file.format_error(r), else: inspect(r)
+
+                ExMake.Logger.debug("Failed to load configuration arguments file '#{path_arg}': #{r}")
+                raise(ExMake.CacheError[description: "Could not load configuration arguments file '#{path_arg}'"])
+            {:ok, args} -> args
+        end
+
+        vars = case :file.consult(path_env) do
+            {:error, r} ->
+                r = if is_tuple(r) && tuple_size(r) == 3, do: :file.format_error(r), else: inspect(r)
+
+                ExMake.Logger.debug("Failed to load configuration variables file '#{path_env}': #{r}")
+                raise(ExMake.CacheError[description: "Could not load configuration variables file '#{path_env}'"])
+            {:ok, vars} -> vars
+        end
+
+        {args, vars}
+    end
+
+    @doc """
+    Checks whether configuration arguments and
+    environment variables are saved in the given
+    cache directory.
+
+    `dir` must be the path to the cache directory.
+    """
+    @spec config_cached?(Path.t()) :: boolean()
+    def config_cached?(dir // ".exmake") do
+        File.exists?(Path.join(dir, "config.arg")) && File.exists?(Path.join(dir, "config.env"))
     end
 end

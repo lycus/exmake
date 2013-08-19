@@ -7,6 +7,8 @@ defmodule ExMake.Lib.Elixir do
     url "https://github.com/lycus/exmake"
     author "Alex Rønne Petersen", "alex@lycus.org"
 
+    precious "ELIXIRC"
+
     on_load args, _ do
         if elixirc = args[:elixirc] || find_exe("elixirc", "ELIXIRC") do
             put("ELIXIRC", elixirc)
