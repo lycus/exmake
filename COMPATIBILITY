@@ -2,5 +2,8 @@
 
                 -- Compatibility --
 
-ExMake requires Erlang R16B+ and Elixir 0.10.1+. You will also need GNU Make
+ExMake requires Erlang R16B+ and Elixir 0.10.2+. You will also need GNU Make
 and basic POSIX utilities to build.
+
+ExMake should generally run on any operating system and architecture that the
+Erlang virtual machine runs on.
