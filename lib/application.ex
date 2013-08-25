@@ -30,7 +30,7 @@ defmodule ExMake.Application do
         end
 
         if opts[:help] do
-            ExMake.Logger.info("Usage: exmake [switches] [--] [targets]")
+            ExMake.Logger.info("Usage: exmake [switches] [--] [targets] [--args args]")
             ExMake.Logger.info("")
             ExMake.Logger.info("The default target is 'all'.")
             ExMake.Logger.info("")
