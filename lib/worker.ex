@@ -248,6 +248,8 @@ defmodule ExMake.Worker do
 
                 # Wait for all remaining jobs to stop.
                 if (n = Process.get(:exmake_jobs)) > 0 do
+                    ExMake.Logger.debug("Waiting for #{n} jobs to exit")
+
                     Enum.each(1 .. n, fn(_) ->
                         receive do
                             {:exmake_done, _, _} -> :ok
