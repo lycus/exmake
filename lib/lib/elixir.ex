@@ -10,9 +10,7 @@ defmodule ExMake.Lib.Elixir do
     precious "ELIXIRC"
 
     on_load args, _ do
-        if elixirc = args[:elixirc] || find_exe("elixirc", "ELIXIRC") do
-            put("ELIXIRC", elixirc)
-        end
+        put("ELIXIRC", args[:elixirc] || find_exe("elixirc", "ELIXIRC"))
 
         list_put("ELIXIRC_FLAGS")
     end

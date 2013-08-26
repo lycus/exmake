@@ -10,9 +10,7 @@ defmodule ExMake.Lib.Erlang do
     precious "ERLC"
 
     on_load args, _ do
-        if erlc = args[:erlc] || find_exe("erlc", "ERLC") do
-            put("ERLC", erlc)
-        end
+        put("ERLC", args[:erlc] || find_exe("erlc", "ERLC"))
 
         list_put("ERLC_FLAGS")
         list_put("ERLC_INCLUDES")
