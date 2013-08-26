@@ -93,10 +93,11 @@ defmodule ExMake.Utils do
 
     `name` must be the name of the executable as a string, or a
     list of names. `var` must be an environment variable name as
-    a string.
+    a string. `silent` must be a Boolean value indicating whether
+    to override configuration when it comes to logging.
     """
-    @spec find_exe(String.t() | [String.t()], String.t()) :: String.t()
-    def find_exe(name, var // "") do
+    @spec find_exe(String.t() | [String.t()], String.t(), boolean()) :: String.t()
+    def find_exe(name, var // "", silent // false) do
         if s = System.get_env(var), do: name = s
 
         names = if is_list(name), do: name, else: [name]
@@ -108,12 +109,16 @@ defmodule ExMake.Utils do
             end
         end)
 
+        var_desc = if var == "", do: "", else: " ('#{var}'#{if s, do: " = '#{s}'", else: ""})"
+
         if !exe do
             list = Enum.join(Enum.map(names, fn(s) -> "'#{s}'" end), ", ")
-            val = if s, do: " = '#{s}'", else: ""
-            var = if var == "", do: "", else: " ('#{var}'#{val})"
 
-            raise(ExMake.ScriptError[description: "Could not locate program #{list}#{var}"])
+            raise(ExMake.ScriptError[description: "Could not locate program #{list}#{var_desc}"])
+        end
+
+        if !silent do
+            ExMake.Logger.log_result("Located program '#{exe}'#{var_desc}")
         end
 
         exe
