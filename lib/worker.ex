@@ -224,6 +224,17 @@ defmodule ExMake.Worker do
                 if cfg.options()[:question] do
                     process_graph_question(tgt, g2, pass_go, pass_end)
                 else
+                    pass_go.("Prepare DAG (#{tgt})")
+
+                    # Transform the labels into {rule, status} tuples.
+                    Enum.each(:digraph.vertices(g2), fn(v) ->
+                        {_, r} = :digraph.vertex(g2, v)
+
+                        :digraph.add_vertex(g2, v, {r, :pending})
+                    end)
+
+                    pass_end.("Prepare DAG (#{tgt})")
+
                     process_graph(tgt, g2, pass_go, pass_end)
                 end
             end)
@@ -434,39 +445,42 @@ defmodule ExMake.Worker do
 
     @spec process_graph(String.t(), digraph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
     defp process_graph(target, graph, pass_go, pass_end, n // 0) do
-        pass_go.("Compute Leaves (#{target} - #{n})")
+        verts = :digraph.vertices(graph)
 
-        # Compute the leaf vertices. These have no outgoing edges.
-        leaves = Enum.filter(:digraph.vertices(graph), fn(v) -> :digraph.out_degree(graph, v) == 0 end)
+        if verts != [] do
+            pass_go.("Compute Leaves (#{target} - #{n})")
 
-        pass_end.("Compute Leaves (#{target} - #{n})")
+            # Compute the leaf vertices. These have no outgoing edges
+            # and have a status of :pending.
+            leaves = Enum.filter(verts, fn(v) ->
+                :digraph.out_degree(graph, v) == 0 && elem(elem(:digraph.vertex(graph, v), 1), 1) == :pending
+            end)
 
-        pass_go.("Enqueue Jobs (#{target} - #{n})")
+            pass_end.("Compute Leaves (#{target} - #{n})")
 
-        # Enqueue jobs for all leaves.
-        Enum.each(leaves, fn(v) ->
-            {_, r} = :digraph.vertex(graph, v)
+            pass_go.("Enqueue Jobs (#{target} - #{n})")
 
-            ExMake.Logger.debug("Enqueuing rule: #{inspect(r)}")
+            # Enqueue jobs for all leaves.
+            Enum.each(leaves, fn(v) ->
+                {_, {r, _}} = :digraph.vertex(graph, v)
 
-            ExMake.Coordinator.enqueue(r)
-        end)
+                ExMake.Logger.debug("Enqueuing rule: #{inspect(r)}")
 
-        Process.put(:exmake_jobs, length(leaves))
+                ExMake.Coordinator.enqueue(r, v)
 
-        pass_end.("Enqueue Jobs (#{target} - #{n})")
+                :digraph.add_vertex(graph, v, {r, :processing})
 
-        pass_go.("Wait for Jobs (#{target} - #{n})")
+                Process.put(:exmake_jobs, Process.get(:exmake_jobs) + 1)
+            end)
 
-        # Wait for all jobs to report back. This is not the most optimal
-        # approach as we may end up waiting for one job to finish while,
-        # say, 3 other jobs are ready to be enqueued. This really should
-        # be optimized at some point.
-        Enum.each(leaves, fn(v) ->
-            {ex, rule} = receive do
-                {:exmake_done, r, :ok} -> {nil, r}
-                {:exmake_done, r, {:throw, val}} -> {ExMake.ThrowError[value: val], r}
-                {:exmake_done, r, {:raise, ex}} -> {ex, r}
+            pass_end.("Enqueue Jobs (#{target} - #{n})")
+
+            pass_go.("Wait for Job (#{target} - #{n})")
+
+            {ex, v, rule} = receive do
+                {:exmake_done, r, v, :ok} -> {nil, v, r}
+                {:exmake_done, r, v, {:throw, val}} -> {ExMake.ThrowError[value: val], v, r}
+                {:exmake_done, r, v, {:raise, ex}} -> {ex, v, r}
             end
 
             ExMake.Logger.debug("Job done for rule: #{inspect(rule)}")
@@ -475,17 +489,15 @@ defmodule ExMake.Worker do
 
             if ex, do: raise(ex)
 
-            # Note that v doesn't necessarily match the message we just
-            # received. It doesn't matter, however, as we just need to
-            # remove it from the graph and receive length(leaves) "done"
-            # messages in the process.
             :digraph.del_vertex(graph, v)
-        end)
 
-        pass_end.("Wait for Jobs (#{target} - #{n})")
+            pass_end.("Wait for Job (#{target} - #{n})")
 
-        # Process the next 'wave' of leaf nodes, if any.
-        if :digraph.no_vertices(graph) == 0, do: :ok, else: process_graph(target, graph, pass_go, pass_end, n + 1)
+            process_graph(target, graph, pass_go, pass_end, n + 1)
+        else
+            # The graph has been reduced to nothing, so we're done.
+            :ok
+        end
     end
 
     @spec process_graph_question(String.t(), digraph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok

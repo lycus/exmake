@@ -1,8 +1,8 @@
 defmodule ExMake.Runner do
     @moduledoc false
 
-    @spec start(pid(), Keyword.t(), pid()) :: pid()
-    def start(coordinator, rule, owner) do
+    @spec start(pid(), Keyword.t(), term(), pid()) :: pid()
+    def start(coordinator, rule, data, owner) do
         spawn(fn() ->
             result = try do
                 {run, arg2} = if rule[:name] do
@@ -75,7 +75,7 @@ defmodule ExMake.Runner do
                 result = delete_elem(result, 2)
             end
 
-            :gen_server.call(coordinator, {:done, rule, owner, result}, :infinity)
+            :gen_server.call(coordinator, {:done, rule, data, owner, result}, :infinity)
         end)
     end
 end

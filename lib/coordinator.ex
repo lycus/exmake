@@ -8,7 +8,7 @@ defmodule ExMake.Coordinator do
 
     @typep request() :: {:set_cfg, ExMake.Config.t()} |
                         {:get_cfg} |
-                        {:enqueue, Keyword.t(), pid()} |
+                        {:enqueue, Keyword.t(), term(), pid()} |
                         {:done, Keyword.t(), pid(), :ok | tuple()} |
                         {:apply_timer, ((ExMake.Timer.session()) -> ExMake.Timer.session())} |
                         {:get_libs} |
@@ -75,20 +75,22 @@ defmodule ExMake.Coordinator do
     Jobs are executed as soon as there is a free job slot available. Once the
     job has executed, the coordinator will send a message to `owner`:
 
-    * `{:exmake_done, rule, :ok}` if the job executed successfully.
-    * `{:exmake_done, rule, {:throw, value}}` if a value was thrown.
-    * `{:exmake_done, rule, {:raise, exception}}` if an exception was raised.
+    * `{:exmake_done, rule, data, :ok}` if the job executed successfully.
+    * `{:exmake_done, rule, data, {:throw, value}}` if a value was thrown.
+    * `{:exmake_done, rule, data, {:raise, exception}}` if an exception was raised.
 
-    Here, `rule` is the rule originally passed to this function.
+    Here, `rule` is the rule originally passed to this function. `data` is the
+    arbitrary term passed as the second argument to this function.
 
-    `rule` must be the keyword list describing the rule. `owner` must be a PID
-    pointing to the process that should be notified once the job is done.
-    `timeout` must be `:infinity` or a millisecond value specifying how much
-    time to wait for the operation to complete.
+    `rule` must be the keyword list describing the rule. `data` can be any
+    term to attach to the job. `owner` must be a PID pointing to the process
+    that should be notified once the job is done. `timeout` must be `:infinity`
+    or a millisecond value specifying how much time to wait for the operation
+    to complete.
     """
-    @spec enqueue(Keyword.t(), pid(), timeout()) :: :ok
-    def enqueue(rule, owner // self(), timeout // :infinity) do
-        :gen_server.call(locate(), {:enqueue, rule, owner}, timeout)
+    @spec enqueue(Keyword.t(), term(), pid(), timeout()) :: :ok
+    def enqueue(rule, data // nil, owner // self(), timeout // :infinity) do
+        :gen_server.call(locate(), {:enqueue, rule, data, owner}, timeout)
         :ok
     end
 
@@ -144,30 +146,30 @@ defmodule ExMake.Coordinator do
                 {:set_cfg}
             {:get_cfg} ->
                 {:get_cfg, state.config()}
-            {:enqueue, rule, owner} ->
+            {:enqueue, rule, data, owner} ->
                 if Set.size(state.jobs()) < state.max_jobs() do
                     # If we have a free job slot, just run it right away.
-                    job = ExMake.Runner.start(self(), rule, owner)
-                    state = state.jobs(Set.put(state.jobs(), {rule, owner, job}))
+                    job = ExMake.Runner.start(self(), rule, data, owner)
+                    state = state.jobs(Set.put(state.jobs(), {rule, data, owner, job}))
                 else
                     # No free slot, so schedule the job for later. We'll run it
                     # once we get a :done message from some other job.
-                    state = state.queue(:queue.in({rule, owner}, state.queue()))
+                    state = state.queue(:queue.in({rule, data, owner}, state.queue()))
                 end
 
                 {:enqueue}
-            {:done, rule, owner, result} ->
-                state = state.jobs(Set.delete(state.jobs(), {rule, owner, sender}))
+            {:done, rule, data, owner, result} ->
+                state = state.jobs(Set.delete(state.jobs(), {rule, data, owner, sender}))
+
+                owner <- {:exmake_done, rule, data, result}
 
                 # We have a free job slot, so run a job if one is enqueued.
                 case :queue.out(state.queue()) do
-                    {{:value, {rule, owner}}, queue} ->
-                        job = ExMake.Runner.start(self(), rule, owner)
-                        state = state.queue(queue).jobs(Set.put(state.jobs(), {rule, owner, job}))
+                    {{:value, {rule, data, owner}}, queue} ->
+                        job = ExMake.Runner.start(self(), rule, data, owner)
+                        state = state.queue(queue).jobs(Set.put(state.jobs(), {rule, data, owner, job}))
                     {:empty, _} -> :ok
                 end
-
-                owner <- {:exmake_done, rule, result}
 
                 {:done}
             {:apply_timer, fun} ->
