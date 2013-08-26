@@ -50,8 +50,7 @@ defmodule ExMake.Lib.FSharp do
             end
 
             kf = if k = @exm_fsharp_opts[:key_file], do: [k], else: []
-            kc = if k = @exm_fsharp_opts[:key_container], do: [k], else: []
-            srcs = unquote(srcs) ++ kf ++ kc
+            srcs = unquote(srcs) ++ kf
             doc = if d = @exm_fsharp_opts[:doc_file], do: [d], else: []
             tgts = [unquote(tgt)] ++ doc ++ dbg
 
@@ -61,14 +60,13 @@ defmodule ExMake.Lib.FSharp do
                 flags = Enum.join(@exm_fsharp_opts[:flags] || [], " ")
                 srcs = Enum.join(srcs, " ")
                 kf = if s = @exm_fsharp_opts[:key_file], do: "--keyfile:#{Path.join(dir, s)}"
-                kc = if s = @exm_fsharp_opts[:key_container], do: "--keycontainer:#{Path.join(dir, s)}"
                 doc = if s = @exm_fsharp_opts[:doc_file], do: "--doc:#{Path.join(dir, s)}"
                 libs = list_get("FSHARPC_LIBS") ++ (@exm_fsharp_opts[:libs] || []) |>
                        Enum.map(fn(l) -> "--lib:#{Path.join(dir, l)}" end) |>
                        Enum.join(" ")
                 dbg = if @exm_fsharp_opts[:debug] && get("FSHARPC_TYPE") != "unknown", do: "--debug+"
 
-                shell("${FSHARPC} ${FSHARPC_FLAGS} #{flags} --nologo #{libs} #{kf} #{kc} #{doc} #{dbg} --out:#{tgt} #{srcs}")
+                shell("${FSHARPC} ${FSHARPC_FLAGS} #{flags} --nologo #{libs} #{kf} #{doc} #{dbg} --out:#{tgt} #{srcs}")
             end
         end
     end

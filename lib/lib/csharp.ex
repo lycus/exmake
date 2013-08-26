@@ -51,8 +51,7 @@ defmodule ExMake.Lib.CSharp do
 
             mods = @exm_csharp_opts[:net_modules] || []
             kf = if k = @exm_csharp_opts[:key_file], do: [k], else: []
-            kc = if k = @exm_csharp_opts[:key_container], do: [k], else: []
-            srcs = unquote(srcs) ++ mods ++ kf ++ kc
+            srcs = unquote(srcs) ++ mods ++ kf
             doc = if d = @exm_csharp_opts[:doc_file], do: [d], else: []
             tgts = [unquote(tgt)] ++ doc ++ dbg
 
@@ -65,14 +64,13 @@ defmodule ExMake.Lib.CSharp do
                        Enum.map(fn(m) -> "/addmodule:#{Path.join(dir, m)}" end) |>
                        Enum.join(" ")
                 kf = if s = @exm_csharp_opts[:key_file], do: "/keyfile:#{Path.join(dir, s)}"
-                kc = if s = @exm_csharp_opts[:key_container], do: "/keycontainer:#{Path.join(dir, s)}"
                 doc = if s = @exm_csharp_opts[:doc_file], do: "/doc:#{Path.join(dir, s)}"
                 libs = list_get("CSC_LIBS") ++ (@exm_csharp_opts[:libs] || []) |>
                        Enum.map(fn(l) -> "/lib:#{Path.join(dir, l)}" end) |>
                        Enum.join(" ")
                 dbg = if @exm_csharp_opts[:debug] && get("CSC_TYPE") != "unknown", do: "/debug"
 
-                shell("${CSC} ${CSC_FLAGS} #{flags} -nologo #{libs} #{mods} #{kf} #{kc} #{doc} #{dbg} /out:#{tgt} -- #{srcs}")
+                shell("${CSC} ${CSC_FLAGS} #{flags} -nologo #{libs} #{mods} #{kf} #{doc} #{dbg} /out:#{tgt} -- #{srcs}")
             end
         end
     end
