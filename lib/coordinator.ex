@@ -26,10 +26,7 @@ defmodule ExMake.Coordinator do
                       {:del_lib} |
                       {:clear_libs}
 
-    @doc """
-    Starts a coordinator process linked to the parent process. Returns
-    `{:ok, pid}` on success.
-    """
+    @doc false
     @spec start_link() :: {:ok, pid()}
     def start_link() do
         tup = {:ok, pid} = :gen_server.start_link(__MODULE__, ExMake.State[], [])
@@ -110,51 +107,28 @@ defmodule ExMake.Coordinator do
         :ok
     end
 
-    @doc """
-    Gets the list of libraries loaded by the current script files. Note that this
-    list is empty in the case where cached modules are used.
-
-    `timeout` must be `:infinity` or a millisecond value specifying how much time
-    to wait for the operation to complete.
-    """
+    @doc false
     @spec get_libraries(timeout()) :: [module()]
     def get_libraries(timeout // :infinity) do
         {:get_libs, libs} = :gen_server.call(locate(), {:get_libs}, timeout)
         libs
     end
 
-    @doc """
-    Adds a given library to the list of loaded libraries.
-
-    `module` must be an atom representing a loaded module. `timeout` must be
-    `:infinity` or a millisecond value specifying how much time to wait for the
-    operation to complete.
-    """
+    @doc false
     @spec add_library(module(), timeout()) :: :ok
     def add_library(module, timeout // :infinity) do
         :gen_server.call(locate(), {:add_lib, module}, timeout)
         :ok
     end
 
-    @doc """
-    Removes a given library from the list of loaded libraries.
-
-    `module` must be an atom representing a loaded module. `timeout` must be
-    `:infinity` or a millisecond value specifying how much time to wait for the
-    operation to complete.
-    """
+    @doc false
     @spec remove_library(module(), timeout()) :: :ok
     def remove_library(module, timeout // :infinity) do
         :gen_server.call(locate(), {:del_lib, module}, timeout)
         :ok
     end
 
-    @doc """
-    Clears the list of loaded libraries.
-
-    `timeout` must be `:infinity` or a millisecond value specifying how much time
-    to wait for the operation to complete.
-    """
+    @doc false
     @spec clear_libraries(timeout()) :: :ok
     def clear_libraries(timeout // :infinity) do
         :gen_server.call(locate(), {:clear_libs}, timeout)

@@ -1,19 +1,6 @@
 defmodule ExMake.Runner do
-    @moduledoc """
-    Encapsulates the processes that are used to actually execute recipes
-    in a script file.
+    @moduledoc false
 
-    This module is only meant to be consumed by `ExMake.Coordinator`.
-    """
-
-    @doc """
-    Starts a runner process.
-
-    `coordinator` must be the PID of a coordinator to send a finish notification
-    to. It is assumed to be a `:gen_server`. `rule` must be the keyword list
-    describing the rule. `owner` must be a PID pointing to the process that should
-    be notified once the job is done.
-    """
     @spec start(pid(), Keyword.t(), pid()) :: pid()
     def start(coordinator, rule, owner) do
         spawn(fn() ->

@@ -6,10 +6,7 @@ defmodule ExMake.Worker do
 
     use GenServer.Behaviour
 
-    @doc """
-    Starts a worker process linked to the parent process. Returns `{:ok, pid}`
-    on success.
-    """
+    @doc false
     @spec start_link() :: {:ok, pid()}
     def start_link() do
         tup = {:ok, pid} = :gen_server.start_link(__MODULE__, nil, [])

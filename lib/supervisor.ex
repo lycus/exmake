@@ -1,14 +1,15 @@
 defmodule ExMake.Supervisor do
     @moduledoc """
-    Contains the default ExMake supervisor which supervises an `ExMake.Worker`
-    process.
+    Contains the default ExMake supervisor which supervises the following
+    singleton processes:
+
+    * `ExMake.Worker`
+    * `ExMake.Coordinator`
     """
 
     use Supervisor.Behaviour
 
-    @doc """
-    Runs the supervisor. Returns `{:ok, pid}` on success.
-    """
+    @doc false
     @spec start_link() :: {:ok, pid()}
     def start_link() do
         {:ok, _} = :supervisor.start_link(__MODULE__, nil)

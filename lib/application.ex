@@ -7,11 +7,7 @@ defmodule ExMake.Application do
 
     @app_version ExMake.Helpers.get_exmake_version()
 
-    @doc """
-    Runs ExMake from the command line. Returns via `System.halt/1`.
-
-    `args` must be a list of strings containing the command line arguments.
-    """
+    @doc false
     @spec main([String.t()]) :: no_return()
     def main(args) do
         {opts, rest, inv, tail} = parse(args)
