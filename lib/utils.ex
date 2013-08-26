@@ -90,23 +90,34 @@ defmodule ExMake.Utils do
     @doc """
     Attempts to find an executable in `PATH` given its name. An
     environment variable name can optionally be given, which, if
-    set, will be preferred.
+    set, will be preferred. Raises `ExMake.ScriptError` if the
+    executable could not be found.
 
     `name` must be the name of the executable as a string, or a
     list of names. `var` must be an environment variable name as
     a string.
     """
-    @spec find_exe(String.t() | [String.t()], String.t() | nil) :: String.t() | nil
+    @spec find_exe(String.t() | [String.t()], String.t()) :: String.t()
     def find_exe(name, var // "") do
         if s = System.get_env(var), do: name = s
 
         names = if is_list(name), do: name, else: [name]
 
-        Enum.find_value(names, fn(name) ->
+        exe = Enum.find_value(names, fn(name) ->
             case :os.find_executable(String.to_char_list!(name)) do
                 false -> nil
                 path -> String.from_char_list!(path)
             end
         end)
+
+        if !exe do
+            list = Enum.join(Enum.map(names, fn(s) -> "'#{s}'" end), ", ")
+            val = if s, do: " = '#{s}'", else: ""
+            var = if var == "", do: "", else: " ('#{var}'#{val})"
+
+            raise(ExMake.ScriptError[description: "Could not locate program #{list}#{var}"])
+        end
+
+        exe
     end
 end
