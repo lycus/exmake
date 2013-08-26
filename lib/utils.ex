@@ -18,12 +18,14 @@ defmodule ExMake.Utils do
 
         shell("${CC} -c foo.c -o foo.o")
 
-    `cmd` must be a string containing the command to execute. `silent`
-    must be a Boolean value indicating whether to override configuration
-    when it comes to logging.
+    `cmd` must be a string containing the command to execute. `opts` must
+    be a list of Boolean options (`:silent` and `:ignore`).
     """
-    @spec shell(String.t(), boolean()) :: String.t()
-    def shell(cmd, silent // false) do
+    @spec shell(String.t(), Keyword.t()) :: String.t()
+    def shell(cmd, opts // []) do
+        silent = opts[:silent] || false
+        ignore = opts[:ignore] || false
+
         cmd = ExMake.Env.reduce(cmd, fn({k, v}, cmd) ->
             value = if is_binary(v) do
                 v
@@ -52,7 +54,7 @@ defmodule ExMake.Utils do
 
         {text, code} = recv.(recv, port, "")
 
-        if code != 0 do
+        if code != 0 && !ignore do
             raise(ExMake.ShellError[command: cmd,
                                     output: text,
                                     exit_code: code])
@@ -93,11 +95,14 @@ defmodule ExMake.Utils do
 
     `name` must be the name of the executable as a string, or a
     list of names. `var` must be an environment variable name as
-    a string. `silent` must be a Boolean value indicating whether
-    to override configuration when it comes to logging.
+    a string. `opts` must be a list of Boolean options (`:silent`
+    and `:ignore`).
     """
-    @spec find_exe(String.t() | [String.t()], String.t(), boolean()) :: String.t()
-    def find_exe(name, var // "", silent // false) do
+    @spec find_exe(String.t() | [String.t()], String.t(), Keyword.t()) :: String.t() | nil
+    def find_exe(name, var // "", opts // []) do
+        silent = opts[:silent] || false
+        ignore = opts[:ignore] || false
+
         if s = System.get_env(var), do: name = s
 
         names = if is_list(name), do: name, else: [name]
@@ -111,7 +116,7 @@ defmodule ExMake.Utils do
 
         var_desc = if var == "", do: "", else: " ('#{var}'#{if s, do: " = '#{s}'", else: ""})"
 
-        if !exe do
+        if !exe && !ignore do
             list = Enum.join(Enum.map(names, fn(s) -> "'#{s}'" end), ", ")
 
             raise(ExMake.ScriptError[description: "Could not locate program #{list}#{var_desc}"])
