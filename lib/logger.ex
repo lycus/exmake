@@ -28,44 +28,47 @@ defmodule ExMake.Logger do
         :ok
     end
 
-    @doc """
-    Prints an informational message. Returns `:ok`.
-
-    `str` must be a binary containing the message.
-    """
+    @doc false
     @spec info(String.t()) :: :ok
     def info(str) do
         output(str)
     end
 
-    @doc """
-    Prints a notice. Colorized as green and white. Returns `:ok`.
-
-    `str` must be a binary containing the message.
-    """
-    @spec note(String.t()) :: :ok
-    def note(str) do
-        output(colorize(str, "green"))
-    end
-
-    @doc """
-    Prints a warning message. Colorized as yellow and white. Returns `:ok`.
-
-    `str` must be a binary containing the message.
-    """
+    @doc false
     @spec warn(String.t()) :: :ok
     def warn(str) do
         output(colorize("Warning:", "yellow") <> " " <> colorize(str, "white"))
     end
 
-    @doc """
-    Prints an error message. Colorized as red and white. Returns `:ok`.
-
-    `str` must be a binary containing the message.
-    """
+    @doc false
     @spec error(String.t()) :: :ok
     def error(prefix // "Error", str) do
         output(colorize(prefix <> ":", "red") <> " " <> colorize(str, "white"))
+    end
+
+    @doc """
+    Prints an informational message in `--loud` mode. Returns `:ok`.
+
+    `str` must be a binary containing the message.
+    """
+    @spec log_info(String.t()) :: :ok
+    def log_info(str) do
+        if ExMake.Coordinator.get_config().options()[:loud], do: info(str)
+
+        :ok
+    end
+
+    @doc """
+    Prints a notice in `--loud` mode. Colorized as green and white. Returns
+    `:ok`.
+
+    `str` must be a binary containing the message.
+    """
+    @spec log_note(String.t()) :: :ok
+    def log_note(str) do
+        if ExMake.Coordinator.get_config().options()[:loud], do: output(colorize(str, "green"))
+
+        :ok
     end
 
     @doc """
@@ -74,10 +77,12 @@ defmodule ExMake.Logger do
 
     `str` must be a binary containing the message.
     """
-    @spec debug(String.t()) :: :ok
-    def debug(str) do
+    @spec log_debug(String.t()) :: :ok
+    def log_debug(str) do
         if System.get_env("EXMAKE_DEBUG") == "1" do
             output(colorize("Debug:", "magenta") <> " " <> colorize(str, "white"))
         end
+
+        :ok
     end
 end

@@ -29,7 +29,7 @@ defmodule ExMake.Libraries do
     @spec search_paths() :: [Path.t()]
     def search_paths() do
         if s = System.get_env("EXMAKE_PATH") do
-            ExMake.Logger.debug("Using EXMAKE_PATH: #{s}")
+            ExMake.Logger.log_debug("Using EXMAKE_PATH: #{s}")
 
             Enum.filter(String.split(s, ":"), fn(s) -> s != "" end)
         else
@@ -63,7 +63,7 @@ defmodule ExMake.Libraries do
         case Code.append_path(p) do
             true -> :ok
             {:error, r} ->
-                ExMake.Logger.debug("Could not add code path #{path} (#{p}): #{r}")
+                ExMake.Logger.log_debug("Could not add code path #{path} (#{p}): #{r}")
                 :error
         end
     end

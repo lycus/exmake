@@ -34,10 +34,8 @@ defmodule ExMake.Utils do
             String.replace(cmd, "${#{k}}", value)
         end)
 
-        cfg = ExMake.Coordinator.get_config()
-
-        if cfg.options()[:loud] && !silent do
-            ExMake.Logger.note(cmd)
+        if !silent do
+            ExMake.Logger.log_note(cmd)
         end
 
         port = Port.open({:spawn, String.to_char_list!(cmd)}, [:binary,
@@ -60,8 +58,8 @@ defmodule ExMake.Utils do
                                     exit_code: code])
         end
 
-        if cfg.options()[:loud] && String.strip(text) != "" && !silent do
-            ExMake.Logger.info(text)
+        if String.strip(text) != "" && !silent do
+            ExMake.Logger.log_info(text)
         end
 
         text

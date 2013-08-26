@@ -255,11 +255,11 @@ defmodule ExMake.Worker do
                 1
             ex ->
                 ExMake.Logger.error(inspect(elem(ex, 0)), ex.message())
-                ExMake.Logger.debug(Exception.format_stacktrace(System.stacktrace()))
+                ExMake.Logger.log_debug(Exception.format_stacktrace(System.stacktrace()))
 
                 # Wait for all remaining jobs to stop.
                 if (n = Process.get(:exmake_jobs)) > 0 do
-                    ExMake.Logger.debug("Waiting for #{n} jobs to exit")
+                    ExMake.Logger.log_debug("Waiting for #{n} jobs to exit")
 
                     Enum.each(1 .. n, fn(_) ->
                         receive do
@@ -464,7 +464,7 @@ defmodule ExMake.Worker do
             Enum.each(leaves, fn(v) ->
                 {_, {r, _}} = :digraph.vertex(graph, v)
 
-                ExMake.Logger.debug("Enqueuing rule: #{inspect(r)}")
+                ExMake.Logger.log_debug("Enqueuing rule: #{inspect(r)}")
 
                 ExMake.Coordinator.enqueue(r, v)
 
@@ -483,7 +483,7 @@ defmodule ExMake.Worker do
                 {:exmake_done, r, v, {:raise, ex}} -> {ex, v, r}
             end
 
-            ExMake.Logger.debug("Job done for rule: #{inspect(rule)}")
+            ExMake.Logger.log_debug("Job done for rule: #{inspect(rule)}")
 
             Process.put(:exmake_jobs, Process.get(:exmake_jobs) - 1)
 

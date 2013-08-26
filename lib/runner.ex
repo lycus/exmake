@@ -66,8 +66,8 @@ defmodule ExMake.Runner do
             end
 
             if result != :ok do
-                ExMake.Logger.debug("Caught #{elem(result, 0)} in runner: #{inspect(elem(result, 1))}")
-                ExMake.Logger.debug(Exception.format_stacktrace(elem(result, 2)))
+                ExMake.Logger.log_debug("Caught #{elem(result, 0)} in runner: #{inspect(elem(result, 1))}")
+                ExMake.Logger.log_debug(Exception.format_stacktrace(elem(result, 2)))
 
                 # If the recipe failed, remove all target files.
                 if tgts = rule[:targets], do: Enum.each(tgts, fn(tgt) -> File.rm(tgt) end)
