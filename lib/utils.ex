@@ -74,7 +74,7 @@ defmodule ExMake.Utils do
     thrown, returns `{:throw, value}`. If an exception was raised,
     returns `{:rescue, exception}`.
     """
-    @spec ignore((() -> term())) :: :ok | {:throw, term()} | {:rescue, tuple()}
+    @spec ignore((() -> term())) :: {:ok, term()} | {:throw, term()} | {:rescue, tuple()}
     def ignore(fun) do
         try do
             {:ok, fun.()}
