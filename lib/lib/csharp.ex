@@ -72,7 +72,7 @@ defmodule ExMake.Lib.CSharp do
                        Enum.join(" ")
                 dbg = if @exm_csharp_opts[:debug] && get("CSC_TYPE") != "unknown", do: "/debug"
 
-                shell("${CSC} ${CSC_FLAGS} #{flags} #{libs} #{mods} #{kf} #{kc} #{doc} #{dbg} /out:#{tgt} -- #{srcs}")
+                shell("${CSC} ${CSC_FLAGS} #{flags} -nologo #{libs} #{mods} #{kf} #{kc} #{doc} #{dbg} /out:#{tgt} -- #{srcs}")
             end
         end
     end

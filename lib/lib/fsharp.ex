@@ -68,7 +68,7 @@ defmodule ExMake.Lib.FSharp do
                        Enum.join(" ")
                 dbg = if @exm_fsharp_opts[:debug] && get("FSHARPC_TYPE") != "unknown", do: "--debug+"
 
-                shell("${FSHARPC} ${FSHARPC_FLAGS} #{flags} #{libs} #{kf} #{kc} #{doc} #{dbg} --out:#{tgt} #{srcs}")
+                shell("${FSHARPC} ${FSHARPC_FLAGS} #{flags} --nologo #{libs} #{kf} #{kc} #{doc} #{dbg} --out:#{tgt} #{srcs}")
             end
         end
     end
