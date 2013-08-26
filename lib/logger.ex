@@ -72,6 +72,19 @@ defmodule ExMake.Logger do
     end
 
     @doc """
+    Prints a result message in `--loud` mode. Colorized as cyan and white.
+    Returns `:ok`.
+
+    `str` must be a binary containing the message.
+    """
+    @spec log_result(String.t()) :: :ok
+    def log_result(str) do
+        if ExMake.Coordinator.get_config().options()[:loud], do: output(colorize(str, "cyan"))
+
+        :ok
+    end
+
+    @doc """
     Prints a debug message if the `EXMAKE_DEBUG` environment variable is set
     to `1`. Colorized as magenta and white. Returns `:ok`.
 
