@@ -11,7 +11,7 @@ defmodule ExMake.Mixfile do
                          " ")
 
         [app: :exmake,
-         version: "0.2.1",
+         version: "0.3.0",
          escript_main_module: ExMake.Application,
          escript_path: Path.join("ebin", "exmake"),
          escript_emu_args: args]
