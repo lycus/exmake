@@ -15,6 +15,7 @@ defmodule ExMake.Lib do
     * `ExMake.Env`
     * `ExMake.File`
     * `ExMake.Lib`
+    * `ExMake.Logger`
     * `ExMake.Utils`
     """
 
@@ -24,6 +25,7 @@ defmodule ExMake.Lib do
             import ExMake.Env
             import ExMake.File
             import ExMake.Lib
+            import ExMake.Logger
             import ExMake.Utils
 
             @before_compile unquote(__MODULE__)
