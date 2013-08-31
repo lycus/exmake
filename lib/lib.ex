@@ -96,9 +96,7 @@ defmodule ExMake.Lib do
     end
 
     @doc """
-    Works like `ExMake.File.load_lib/2`, but only loads the library, i.e. it is not
-    `require`d or `import`ed. This is primarily meant to be called from an `on_load`
-    function in a library that depends on another library.
+    Asserts that a particular library is loaded. If not, raises `ExMake.ScriptError`.
 
     Example:
 
@@ -116,26 +114,15 @@ defmodule ExMake.Lib do
             end
         end
 
-    This ensures that `ExMake.Lib.Erlang` is loaded when a build is executed so that
-    its `on_load` function is invoked. The `require` is needed so that `ExMake.Lib.Foo`
+    This ensures that `ExMake.Lib.Erlang` has been loaded by the user before the `on_load`
+    function of `ExMake.Lib.Foo` is called. The `require` is needed so that `ExMake.Lib.Foo`
     can make use of functions and macros exported from `ExMake.Lib.Erlang`.
     """
-    defmacro require_lib(lib) do
-        # Keep in sync with ExMake.File.load_lib_qual/2.
-        lib_mod = Module.concat(ExMake.Lib, Macro.expand_once(lib, __ENV__))
+    def require_lib(lib) do
+        lib_mod = Module.concat(ExMake.Lib, lib)
 
-        quote do
-            {:module, _} = Code.ensure_loaded(unquote(lib_mod))
-
-            case unquote(lib_mod).__exmake__(:on_load) do
-                {m, f} ->
-                    cargs = ExMake.Coordinator.get_config().args()
-
-                    apply(m, f, [[], cargs])
-                nil -> :ok
-            end
-
-            ExMake.Coordinator.add_library(unquote(lib_mod))
+        if !:code.is_loaded(lib_mod) do
+            raise(ExMake.ScriptError[description: "Library #{lib} must be loaded"])
         end
     end
 
