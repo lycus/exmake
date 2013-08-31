@@ -72,6 +72,19 @@ defmodule ExMake.Logger do
     end
 
     @doc """
+    Prints a warning in `--loud` mode. Colorized as yellow and white. Returns
+    `:ok`.
+
+    `str` must be a binary containing the message.
+    """
+    @spec log_warn(String.t()) :: :ok
+    def log_warn(str) do
+        if ExMake.Coordinator.get_config().options()[:loud], do: warn(str)
+
+        :ok
+    end
+
+    @doc """
     Prints a result message in `--loud` mode. Colorized as cyan and white.
     Returns `:ok`.
 
