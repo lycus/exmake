@@ -146,7 +146,7 @@ defmodule ExMake.Lib do
 
             precious "CC"
 
-            on_load _ do
+            on_load _, _ do
                 if cc = args[:cc] || find_exe("cc", "CC") do
                     put("CC", cc)
                 end
