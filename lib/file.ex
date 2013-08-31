@@ -60,17 +60,19 @@ defmodule ExMake.File do
         quote do
             {:module, _} = Code.ensure_loaded(unquote(lib_mod))
 
-            case unquote(lib_mod).__exmake__(:on_load) do
-                {m, f} ->
-                    cargs = ExMake.Coordinator.get_config().args()
+            if !Enum.member?(ExMake.Coordinator.get_libraries(), unquote(lib_mod)) do
+                case unquote(lib_mod).__exmake__(:on_load) do
+                    {m, f} ->
+                        cargs = ExMake.Coordinator.get_config().args()
 
-                    apply(m, f, [unquote(args), cargs])
-                nil -> :ok
+                        apply(m, f, [unquote(args), cargs])
+                    _ -> :ok
+                end
+
+                ExMake.Coordinator.add_library(unquote(lib_mod))
+
+                require unquote(lib_mod)
             end
-
-            ExMake.Coordinator.add_library(unquote(lib_mod))
-
-            require unquote(lib_mod)
         end
     end
 
