@@ -54,6 +54,7 @@ defmodule ExMake.File do
     Similar to `load_lib/2`, but only `require`s the library instead of `import`ing it.
     """
     defmacro load_lib_qual(lib, args // []) do
+        # Keep in sync with ExMake.Lib.require_lib/1.
         lib_mod = Module.concat(ExMake.Lib, Macro.expand_once(lib, __ENV__))
 
         quote do

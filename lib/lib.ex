@@ -96,6 +96,50 @@ defmodule ExMake.Lib do
     end
 
     @doc """
+    Works like `ExMake.File.load_lib/2`, but only loads the library, i.e. it is not
+    `require`d or `import`ed. This is primarily meant to be called from an `on_load`
+    function in a library that depends on another library.
+
+    Example:
+
+        defmodule ExMake.Lib.Foo do
+            use ExMake.Lib
+
+            require ExMake.Lib.Erlang
+
+            on_load _, _ do
+                load_lib Erlang
+            end
+
+            defmacro fancy_wrapper(arg) do
+                quote do: erl unquote(arg)
+            end
+        end
+
+    This ensures that `ExMake.Lib.Erlang` is loaded when a build is executed so that
+    its `on_load` function is invoked. The `require` is needed so that `ExMake.Lib.Foo`
+    can make use of functions and macros exported from `ExMake.Lib.Erlang`.
+    """
+    defmacro require_lib(lib) do
+        # Keep in sync with ExMake.File.load_lib_qual/2.
+        lib_mod = Module.concat(ExMake.Lib, Macro.expand_once(lib, __ENV__))
+
+        quote do
+            {:module, _} = Code.ensure_loaded(unquote(lib_mod))
+
+            case unquote(lib_mod).__exmake__(:on_load) do
+                {m, f} ->
+                    cargs = ExMake.Coordinator.get_config().args()
+
+                    apply(m, f, [[], cargs])
+                nil -> :ok
+            end
+
+            ExMake.Coordinator.add_library(unquote(lib_mod))
+        end
+    end
+
+    @doc """
     Defines a function that gets called when the library is loaded.
 
     Example:
