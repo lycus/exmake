@@ -59,11 +59,17 @@ defmodule ExMake.Lib.CSharp do
                  srcs,
                  srcs, [tgt | _], dir do
                 flags = Enum.join(@exm_csharp_opts[:flags] || [], " ")
-                srcs = Enum.join(srcs, " ")
+                not_srcs = (@exm_csharp_opts[:net_modules] || []) |>
+                           List.concat(if k = @exm_csharp_opts[:key_file], do: [k], else: []) |>
+                           Enum.map(fn(x) -> Path.join(dir, x) end)
+                srcs = HashSet.new(srcs) |>
+                       Set.difference(HashSet.new(not_srcs)) |>
+                       Set.to_list() |>
+                       Enum.join(" ")
                 mods = (@exm_csharp_opts[:net_modules] || []) |>
                        Enum.map(fn(m) -> "/addmodule:#{Path.join(dir, m)}" end) |>
                        Enum.join(" ")
-                kf = if s = @exm_csharp_opts[:key_file], do: "/keyfile:#{Path.join(dir, s)}"
+                kf = if k, do: "/keyfile:#{Path.join(dir, k)}"
                 doc = if s = @exm_csharp_opts[:doc_file], do: "/doc:#{Path.join(dir, s)}"
                 libs = list_get("CSC_LIBS") ++ (@exm_csharp_opts[:libs] || []) |>
                        Enum.map(fn(l) -> "/lib:#{Path.join(dir, l)}" end) |>
