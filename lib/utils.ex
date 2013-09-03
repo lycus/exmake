@@ -128,4 +128,20 @@ defmodule ExMake.Utils do
 
         exe
     end
+
+    @doc """
+    Formats a string according to `:io_lib.format/2` and returns
+    the resulting string as a binary.
+
+    Please note that you should usually use the `~ts` modifier
+    rather than `~s` as the latter will not handle UTF-8 strings
+    correctly. The same goes for `~tc` and `~c`.
+
+    `str` must be the format string as a binary. `args` must be
+    a list of terms to pass to the formatting function.
+    """
+    @spec format(String.t(), [term()]) :: String.t()
+    def format(str, args) do
+        :io_lib.format(str, args) |> iolist_to_binary()
+    end
 end
