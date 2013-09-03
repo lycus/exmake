@@ -83,4 +83,22 @@ defmodule ExMake.Lib.Host do
         ExMake.Logger.log_result("Host endianness: #{endian}")
         put("HOST_ENDIAN", endian)
     end
+
+    def host_binary_patterns() do
+        case get("HOST_FORMAT") do
+            "elf" ->
+                [stlib: "lib~ts.a",
+                 shlib: "lib~ts.so",
+                 exe: "~ts"]
+            "macho" ->
+                [stlib: "lib~ts.a",
+                 shlib: "lib~ts.dylib",
+                 exe: "~ts"]
+            "pe" ->
+                [stlib: "lib~ts.a",
+                 shlib: "~ts.dll",
+                 implib: "~ts.lib",
+                 exe: "~ts"]
+        end
+    end
 end
