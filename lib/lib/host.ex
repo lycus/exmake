@@ -87,15 +87,18 @@ defmodule ExMake.Lib.Host do
     def host_binary_patterns() do
         case get("HOST_FORMAT") do
             "elf" ->
-                [stlib: "lib~ts.a",
+                [obj: "~ts.o",
+                 stlib: "lib~ts.a",
                  shlib: "lib~ts.so",
                  exe: "~ts"]
             "macho" ->
-                [stlib: "lib~ts.a",
+                [obj: "~ts.o",
+                 stlib: "lib~ts.a",
                  shlib: "lib~ts.dylib",
                  exe: "~ts"]
             "pe" ->
-                [stlib: "lib~ts.a",
+                [obj: "~ts.obj",
+                 stlib: "lib~ts.a",
                  shlib: "~ts.dll",
                  implib: "~ts.lib",
                  exe: "~ts"]
