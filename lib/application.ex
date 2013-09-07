@@ -84,7 +84,8 @@ defmodule ExMake.Application do
                     loud: :boolean,
                     question: :boolean,
                     jobs: :integer,
-                    time: :boolean]
+                    time: :boolean,
+                    clear: :boolean]
 
         aliases = [h: :help,
                    v: :version,
