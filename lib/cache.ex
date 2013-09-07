@@ -187,22 +187,22 @@ defmodule ExMake.Cache do
     end
 
     @doc """
-    Writes the manifest file to the cache with the
-    given files. Raises `ExMake.CacheError` if something
-    went wrong.
+    Writes the given list of files to the manifest file
+    in the given cache directory. Raises `ExMake.CacheError`
+    if something went wrong.
 
     `files` must be a list of files that are to be
     considered part of the cache manifest. `dir` must
     be the path to the cache directory.
     """
-    @spec save_manifest([Path.t()], Path.t()) :: :ok
-    def save_manifest(files, dir // ".exmake") do
+    @spec append_manifest([Path.t()], Path.t()) :: :ok
+    def append_manifest(files, dir // ".exmake") do
         ensure_cache_dir(dir)
 
         path = Path.join(dir, "manifest.lst")
         data = Enum.join(files, "\n") <> "\n"
 
-        case File.write(path, data) do
+        case File.write(path, data, [:append]) do
             {:error, r} ->
                 ExMake.Logger.log_debug("Failed to save manifest file '#{path}': #{inspect(r)}")
                 raise(ExMake.CacheError[description: "Could not save manifest file '#{path}'"])

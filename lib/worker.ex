@@ -169,7 +169,7 @@ defmodule ExMake.Worker do
 
                 manifest_mods = Enum.map(mods, fn({d, f, _, _}) -> Path.join(d, f) end)
 
-                ExMake.Cache.save_manifest(manifest_mods ++ manifest_files)
+                ExMake.Cache.append_manifest(manifest_mods ++ manifest_files)
 
                 pass_end.("Save Cache Manifest")
 
