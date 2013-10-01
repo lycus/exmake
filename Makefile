@@ -19,7 +19,7 @@ ebin/exmake.app: $(wildcard lib/*.ex) $(wildcard lib/lib/*.ex)
 	@$(MIX) compile
 
 clean:
-	@$(MIX) clean --all
+	@$(MIX) clean
 	@$(RM) -r tmp
 
 test:
