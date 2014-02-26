@@ -42,7 +42,7 @@ defmodule ExMake.Helpers do
 
     @spec get_exmake_version_tuple() :: {non_neg_integer(), non_neg_integer(), non_neg_integer()}
     def get_exmake_version_tuple() do
-        ver = Mix.Version.parse(get_exmake_version())
+        {:ok, ver} = Version.parse(get_exmake_version())
 
         {ver.major(), ver.minor(), ver.patch()}
     end
