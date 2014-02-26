@@ -4,18 +4,20 @@ DIALYZER ?= dialyzer
 
 PREFIX ?= /usr/local
 
+override _build = _build/shared/lib/exmake/ebin
+
 .PHONY: all escript ebin clean test dialyze install uninstall
 
-all: ebin/exmake
+all: $(_build)/exmake
 
-escript: ebin/exmake
+escript: $(_build)/exmake
 
-ebin/exmake: ebin/exmake.app
+$(_build)/exmake: $(_build)/exmake.app
 	@$(MIX) escriptize
 
-ebin: ebin/exmake.app
+ebin: $(_build)/exmake.app
 
-ebin/exmake.app: $(wildcard lib/*.ex) $(wildcard lib/lib/*.ex)
+$(_build)/exmake.app: $(wildcard lib/*.ex) $(wildcard lib/lib/*.ex)
 	@$(MIX) compile
 
 clean:
@@ -25,15 +27,15 @@ clean:
 test:
 	@$(MIX) test --trace
 
-dialyze: ebin/exmake.app
+dialyze: $(_build)/exmake.app
 	$(DIALYZER) --no_check_plt -r ebin \
 		-Wunmatched_returns \
 		-Werror_handling
 
-install: ebin/exmake
+install: $(_build)/exmake
 	$(INSTALL) -m755 -d $(PREFIX)
 	$(INSTALL) -m755 -d $(PREFIX)/bin
-	$(INSTALL) -m755 ebin/exmake $(PREFIX)/bin
+	$(INSTALL) -m755 $(_build)/exmake $(PREFIX)/bin
 	$(INSTALL) -m755 -d $(PREFIX)/lib
 	$(INSTALL) -m755 -d $(PREFIX)/lib/exmake
 

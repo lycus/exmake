@@ -21,7 +21,7 @@ defmodule ExMake.Test.Case do
         """
     end
 
-    def create_fixture(path, name, contents, opts // []) do
+    def create_fixture(path, name, contents, opts \\ []) do
         p = Path.join("tmp", path)
 
         File.mkdir_p!(p)
@@ -42,7 +42,7 @@ defmodule ExMake.Test.Case do
         p
     end
 
-    def execute_in(path, args // []) do
+    def execute_in(path, args \\ []) do
         File.cd!(path, fn() ->
             {opts, rest, _, tail} = ExMake.Application.parse(args)
 

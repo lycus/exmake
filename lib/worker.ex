@@ -33,11 +33,11 @@ defmodule ExMake.Worker do
     how much time to wait for the operation to complete.
     """
     @spec work(timeout()) :: non_neg_integer()
-    def work(timeout // :infinity) do
+    def work(timeout \\ :infinity) do
         code = :gen_server.call(locate(), :work, timeout)
 
         _ = case :application.get_env(:exmake, :exmake_event_pid) do
-            {:ok, pid} -> pid <- {:exmake_shutdown, code}
+            {:ok, pid} -> send(pid, {:exmake_shutdown, code})
             :undefined -> :ok
         end
 
@@ -143,7 +143,7 @@ defmodule ExMake.Worker do
 
                 vars = ExMake.Coordinator.get_libraries() |>
                        Enum.map(fn(m) -> m.__exmake__(:precious) end) |>
-                       List.concat() |>
+                       Enum.concat() |>
                        Enum.map(fn(v) -> {v, System.get_env(v)} end) |>
                        Enum.filter(fn({_, v}) -> v end)
 
@@ -153,7 +153,7 @@ defmodule ExMake.Worker do
 
                 pass_go.("Check Manifest Specifications")
 
-                manifest_files = List.concat(Enum.map(mods, fn({d, _, m, _}) ->
+                manifest_files = Enum.concat(Enum.map(mods, fn({d, _, m, _}) ->
                     Enum.map(m.__exmake__(:manifest), fn(file) ->
                         if !String.valid?(file) do
                             raise(ExMake.ScriptError[description: "Manifest file must be a string"])
@@ -315,7 +315,7 @@ defmodule ExMake.Worker do
         pass_go.("Sanitize Rule Paths")
 
         # Make paths relative to the ExMake invocation directory.
-        rules = List.concat(Enum.map(mods, fn({d, _, m}) ->
+        rules = Enum.concat(Enum.map(mods, fn({d, _, m}) ->
             Enum.map(m.__exmake__(:rules), fn(spec) ->
                 tgts = Enum.map(spec[:targets], fn(f) -> Path.join(d, f) end)
                 srcs = Enum.map(spec[:sources], fn(f) -> Path.join(d, f) end)
@@ -329,7 +329,7 @@ defmodule ExMake.Worker do
         pass_go.("Sanitize Phony Rule Paths")
 
         # Do the same for phony rules.
-        phony_rules = List.concat(Enum.map(mods, fn({d, _, m}) ->
+        phony_rules = Enum.concat(Enum.map(mods, fn({d, _, m}) ->
             Enum.map(m.__exmake__(:phony_rules), fn(spec) ->
                 name = Path.join(d, spec[:name])
                 srcs = Enum.map(spec[:sources], fn(f) -> Path.join(d, f) end)
@@ -344,7 +344,7 @@ defmodule ExMake.Worker do
 
         target_names = rules |>
                        Enum.map(fn(x) -> x[:targets] end) |>
-                       List.concat()
+                       Enum.concat()
 
         target_names = Enum.reduce(target_names, HashSet.new(), fn(n, set) ->
             if Set.member?(set, n) do
@@ -444,7 +444,7 @@ defmodule ExMake.Worker do
     end
 
     @spec process_graph(String.t(), digraph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
-    defp process_graph(target, graph, pass_go, pass_end, n // 0) do
+    defp process_graph(target, graph, pass_go, pass_end, n \\ 0) do
         verts = :digraph.vertices(graph)
 
         if verts != [] do
@@ -501,7 +501,7 @@ defmodule ExMake.Worker do
     end
 
     @spec process_graph_question(String.t(), digraph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
-    defp process_graph_question(target, graph, pass_go, pass_end, n // 0) do
+    defp process_graph_question(target, graph, pass_go, pass_end, n \\ 0) do
         pass_go.("Compute Leaves (#{target} - #{n})")
 
         # Compute the leaf vertices. These have no outgoing edges.

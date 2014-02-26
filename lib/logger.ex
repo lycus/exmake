@@ -21,7 +21,7 @@ defmodule ExMake.Logger do
     @spec output(String.t()) :: :ok
     defp output(str) do
         _ = case :application.get_env(:exmake, :exmake_event_pid) do
-            {:ok, pid} -> pid <- {:exmake_stdout, str <> "\n"}
+            {:ok, pid} -> send(pid, {:exmake_stdout, str <> "\n"})
             :undefined -> IO.puts(str)
         end
 
@@ -42,7 +42,7 @@ defmodule ExMake.Logger do
 
     @doc false
     @spec error(String.t()) :: :ok
-    def error(prefix // "Error", str) do
+    def error(prefix \\ "Error", str) do
         output(colorize(prefix <> ":", "red") <> " " <> colorize(str, "white"))
     end
 

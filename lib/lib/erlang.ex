@@ -24,7 +24,7 @@ defmodule ExMake.Lib.Erlang do
         quote do: ExMake.Env.list_append("ERLC_INCLUDES", unquote(dir))
     end
 
-    defmacro erl(src, opts // []) do
+    defmacro erl(src, opts \\ []) do
         quote do
             @exm_erlang_opts unquote(opts)
 

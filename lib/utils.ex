@@ -22,7 +22,7 @@ defmodule ExMake.Utils do
     be a list of Boolean options (`:silent` and `:ignore`).
     """
     @spec shell(String.t(), Keyword.t()) :: String.t()
-    def shell(cmd, opts // []) do
+    def shell(cmd, opts \\ []) do
         silent = opts[:silent] || false
         ignore = opts[:ignore] || false
 
@@ -99,7 +99,7 @@ defmodule ExMake.Utils do
     and `:ignore`).
     """
     @spec find_exe(String.t() | [String.t()], String.t(), Keyword.t()) :: String.t() | nil
-    def find_exe(name, var // "", opts // []) do
+    def find_exe(name, var \\ "", opts \\ []) do
         silent = opts[:silent] || false
         ignore = opts[:ignore] || false
 

@@ -51,7 +51,7 @@ defmodule ExMake.Coordinator do
     the operation to complete.
     """
     @spec set_config(ExMake.Config.t(), timeout()) :: :ok
-    def set_config(cfg, timeout // :infinity) do
+    def set_config(cfg, timeout \\ :infinity) do
         :gen_server.call(locate(), {:set_cfg, cfg}, timeout)
         :ok
     end
@@ -64,7 +64,7 @@ defmodule ExMake.Coordinator do
     time to wait for the operation to complete.
     """
     @spec get_config(timeout()) :: ExMake.Config.t() | nil
-    def get_config(timeout // :infinity) do
+    def get_config(timeout \\ :infinity) do
         {:get_cfg, cfg} = :gen_server.call(locate(), {:get_cfg}, timeout)
         cfg
     end
@@ -89,7 +89,7 @@ defmodule ExMake.Coordinator do
     to complete.
     """
     @spec enqueue(Keyword.t(), term(), pid(), timeout()) :: :ok
-    def enqueue(rule, data // nil, owner // self(), timeout // :infinity) do
+    def enqueue(rule, data \\ nil, owner \\ self(), timeout \\ :infinity) do
         :gen_server.call(locate(), {:enqueue, rule, data, owner}, timeout)
         :ok
     end
@@ -104,35 +104,35 @@ defmodule ExMake.Coordinator do
     operation to complete.
     """
     @spec apply_timer_fn(((ExMake.Timer.session()) -> ExMake.Timer.session()), timeout()) :: :ok
-    def apply_timer_fn(fun, timeout // :infinity) do
+    def apply_timer_fn(fun, timeout \\ :infinity) do
         :gen_server.call(locate(), {:apply_timer, fun}, timeout)
         :ok
     end
 
     @doc false
     @spec get_libraries(timeout()) :: [module()]
-    def get_libraries(timeout // :infinity) do
+    def get_libraries(timeout \\ :infinity) do
         {:get_libs, libs} = :gen_server.call(locate(), {:get_libs}, timeout)
         libs
     end
 
     @doc false
     @spec add_library(module(), timeout()) :: :ok
-    def add_library(module, timeout // :infinity) do
+    def add_library(module, timeout \\ :infinity) do
         :gen_server.call(locate(), {:add_lib, module}, timeout)
         :ok
     end
 
     @doc false
     @spec remove_library(module(), timeout()) :: :ok
-    def remove_library(module, timeout // :infinity) do
+    def remove_library(module, timeout \\ :infinity) do
         :gen_server.call(locate(), {:del_lib, module}, timeout)
         :ok
     end
 
     @doc false
     @spec clear_libraries(timeout()) :: :ok
-    def clear_libraries(timeout // :infinity) do
+    def clear_libraries(timeout \\ :infinity) do
         :gen_server.call(locate(), {:clear_libs}, timeout)
         :ok
     end
@@ -161,7 +161,7 @@ defmodule ExMake.Coordinator do
             {:done, rule, data, owner, result} ->
                 state = state.jobs(Set.delete(state.jobs(), {rule, data, owner, sender}))
 
-                owner <- {:exmake_done, rule, data, result}
+                send(owner, {:exmake_done, rule, data, result})
 
                 # We have a free job slot, so run a job if one is enqueued.
                 case :queue.out(state.queue()) do

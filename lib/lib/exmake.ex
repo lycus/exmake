@@ -7,7 +7,7 @@ defmodule ExMake.Lib.ExMake do
     url "https://github.com/lycus/exmake"
     author "Alex Rønne Petersen", "alex@lycus.org"
 
-    defmacro exm_lib(src, mods, opts // []) do
+    defmacro exm_lib(src, mods, opts \\ []) do
         quote do
             @exm_exmake_opts unquote(opts)
 

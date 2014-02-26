@@ -35,9 +35,9 @@ To get an escript:
 
     $ make escript
 
-This places the escript named exmake in the ebin directory. It is completely
-self-contained so it can be moved anywhere and will run fine provided the
-host system it is run on has Erlang installed.
+This places the escript named exmake in the _build/shared/lib/exmake/ebin
+directory. It is completely self-contained so it can be moved anywhere and will
+run fine provided the host system it is run on has Erlang installed.
 
 It's a good idea to run the test suite before using ExMake:
 

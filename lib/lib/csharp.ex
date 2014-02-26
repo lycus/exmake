@@ -35,7 +35,7 @@ defmodule ExMake.Lib.CSharp do
         quote do: ExMake.Env.list_append("CSC_LIBS", unquote(dir))
     end
 
-    defmacro cs(srcs, tgt, opts // []) do
+    defmacro cs(srcs, tgt, opts \\ []) do
         quote do
             @exm_csharp_opts unquote(opts)
 
@@ -60,7 +60,7 @@ defmodule ExMake.Lib.CSharp do
                  srcs, [tgt | _], dir do
                 flags = Enum.join(@exm_csharp_opts[:flags] || [], " ")
                 not_srcs = (@exm_csharp_opts[:net_modules] || []) |>
-                           List.concat(if k = @exm_csharp_opts[:key_file], do: [k], else: []) |>
+                           Enum.concat(if k = @exm_csharp_opts[:key_file], do: [k], else: []) |>
                            Enum.map(fn(x) -> Path.join(dir, x) end)
                 srcs = HashSet.new(srcs) |>
                        Set.difference(HashSet.new(not_srcs)) |>

@@ -16,7 +16,7 @@ defmodule ExMake.Loader do
     file to load in `dir`.
     """
     @spec load(Path.t(), Path.t()) :: [{Path.t(), Path.t(), module(), binary()}, ...]
-    def load(dir, file // "Exmakefile") do
+    def load(dir, file \\ "Exmakefile") do
         p = Path.join(dir, file)
 
         list = try do

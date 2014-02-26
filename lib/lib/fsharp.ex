@@ -35,7 +35,7 @@ defmodule ExMake.Lib.FSharp do
         quote do: ExMake.Env.list_append("FSHARPC_LIBS", unquote(dir))
     end
 
-    defmacro fs(srcs, tgt, opts // []) do
+    defmacro fs(srcs, tgt, opts \\ []) do
         quote do
             @exm_fsharp_opts unquote(opts)
 

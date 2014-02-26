@@ -53,7 +53,7 @@ defmodule ExMake.File do
     @doc """
     Similar to `load_lib/2`, but only `require`s the library instead of `import`ing it.
     """
-    defmacro load_lib_qual(lib, args // []) do
+    defmacro load_lib_qual(lib, args \\ []) do
         # Keep in sync with ExMake.Lib.require_lib/1.
         lib_mod = Module.concat(ExMake.Lib, Macro.expand_once(lib, __ENV__))
 
@@ -83,7 +83,7 @@ defmodule ExMake.File do
     `lib` must be the library name, e.g. `C` to load the C compiler module. Note that it
     must be a compile-time value. `args` must be a list of arbitrary terms.
     """
-    defmacro load_lib(lib, args // []) do
+    defmacro load_lib(lib, args \\ []) do
         lib_mod = Module.concat(ExMake.Lib, Macro.expand_once(lib, __ENV__))
 
         quote do
@@ -124,7 +124,7 @@ defmodule ExMake.File do
         quote do: @exmake_manifest unquote(file)
     end
 
-    @doc %B"""
+    @doc %S"""
     Specifies a directory to recurse into.
 
     Example:
@@ -168,11 +168,11 @@ defmodule ExMake.File do
     list of directories to recurse into and includes all rules in those directories
     into the canonical dependency graph.
     """
-    defmacro recurse(dir, file // "Exmakefile") do
+    defmacro recurse(dir, file \\ "Exmakefile") do
         quote do: @exmake_subdirectories {unquote(dir), unquote(file)}
     end
 
-    @doc %B"""
+    @doc %S"""
     Defines a rule.
 
     Example:
@@ -238,7 +238,7 @@ defmodule ExMake.File do
         end
     end
 
-    @doc %B"""
+    @doc %S"""
     Defines a phony rule.
 
     Example:

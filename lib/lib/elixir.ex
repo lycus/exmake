@@ -19,7 +19,7 @@ defmodule ExMake.Lib.Elixir do
         quote do: ExMake.Env.list_append("ELIXIRC_FLAGS", unquote(flag))
     end
 
-    defmacro ex(src, mods, opts // []) do
+    defmacro ex(src, mods, opts \\ []) do
         quote do
             @exm_elixir_opts unquote(opts)
 

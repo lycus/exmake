@@ -49,7 +49,7 @@ defmodule ExMake.Cache do
     `dir` must be the path to the cache directory.
     """
     @spec clear_cache(Path.t()) :: :ok
-    def clear_cache(dir // ".exmake") do
+    def clear_cache(dir \\ ".exmake") do
         Enum.each(get_cache_files(dir) ++ get_beam_files(dir), fn(f) -> File.rm(f) end)
     end
 
@@ -60,7 +60,7 @@ defmodule ExMake.Cache do
     `dir` must be the path to the cache directory.
     """
     @spec cache_stale?(Path.t()) :: boolean()
-    def cache_stale?(dir // ".exmake") do
+    def cache_stale?(dir \\ ".exmake") do
         case get_manifest_list(dir) do
             [] -> true
             files ->
@@ -82,7 +82,7 @@ defmodule ExMake.Cache do
     path to the cache directory.
     """
     @spec save_env(Path.t()) :: :ok
-    def save_env(dir // ".exmake") do
+    def save_env(dir \\ ".exmake") do
         ensure_cache_dir(dir)
 
         # Ensure that the table has been created.
@@ -107,7 +107,7 @@ defmodule ExMake.Cache do
     `dir` must be the path to the cache directory.
     """
     @spec load_env(Path.t()) :: :exmake_env
-    def load_env(dir // ".exmake") do
+    def load_env(dir \\ ".exmake") do
         path = Path.join(dir, "table.env")
 
         # If the table exists, kill it, then reload from cache.
@@ -133,7 +133,7 @@ defmodule ExMake.Cache do
     the path to the cache directory.
     """
     @spec save_graph(digraph(), Path.t()) :: :ok
-    def save_graph(graph, dir // ".exmake") do
+    def save_graph(graph, dir \\ ".exmake") do
         ensure_cache_dir(dir)
 
         # We really shouldn't be exploiting knowledge about
@@ -164,7 +164,7 @@ defmodule ExMake.Cache do
     `dir` must be the path to the cache directory.
     """
     @spec load_graph(Path.t()) :: digraph()
-    def load_graph(dir // ".exmake") do
+    def load_graph(dir \\ ".exmake") do
         files = [Path.join(dir, "vertices.dag"),
                  Path.join(dir, "edges.dag"),
                  Path.join(dir, "neighbors.dag")]
@@ -196,7 +196,7 @@ defmodule ExMake.Cache do
     be the path to the cache directory.
     """
     @spec append_manifest([Path.t()], Path.t()) :: :ok
-    def append_manifest(files, dir // ".exmake") do
+    def append_manifest(files, dir \\ ".exmake") do
         ensure_cache_dir(dir)
 
         path = Path.join(dir, "manifest.lst")
@@ -220,7 +220,7 @@ defmodule ExMake.Cache do
     `dir` must be the path to the cache directory.
     """
     @spec save_mods([{module(), binary()}], Path.t()) :: :ok
-    def save_mods(mods, dir // ".exmake") do
+    def save_mods(mods, dir \\ ".exmake") do
         ensure_cache_dir(dir)
 
         Enum.each(mods, fn({mod, bin}) ->
@@ -242,7 +242,7 @@ defmodule ExMake.Cache do
     `dir` must be the path to the cache directory.
     """
     @spec load_mods(Path.t()) :: :ok
-    def load_mods(dir // ".exmake") do
+    def load_mods(dir \\ ".exmake") do
         Enum.each(get_beam_files(dir), fn(beam) ->
             path = Path.rootname(beam)
 
@@ -266,7 +266,7 @@ defmodule ExMake.Cache do
     directory.
     """
     @spec save_config([String.t()], [{String.t(), String.t()}], Path.t()) :: :ok
-    def save_config(args, vars, dir // ".exmake") do
+    def save_config(args, vars, dir \\ ".exmake") do
         ensure_cache_dir(dir)
 
         path_arg = Path.join(dir, "config.arg")
@@ -303,7 +303,7 @@ defmodule ExMake.Cache do
     `dir` must be the path to the cache directory.
     """
     @spec load_config(Path.t()) :: {[String.t()], [{String.t(), String.t()}]}
-    def load_config(dir // ".exmake") do
+    def load_config(dir \\ ".exmake") do
         path_arg = Path.join(dir, "config.arg")
         path_env = Path.join(dir, "config.env")
 
@@ -336,7 +336,7 @@ defmodule ExMake.Cache do
     `dir` must be the path to the cache directory.
     """
     @spec config_cached?(Path.t()) :: boolean()
-    def config_cached?(dir // ".exmake") do
+    def config_cached?(dir \\ ".exmake") do
         File.exists?(Path.join(dir, "config.arg")) && File.exists?(Path.join(dir, "config.env"))
     end
 end

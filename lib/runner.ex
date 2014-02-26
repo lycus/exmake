@@ -72,7 +72,7 @@ defmodule ExMake.Runner do
                 # If the recipe failed, remove all target files.
                 if tgts = rule[:targets], do: Enum.each(tgts, fn(tgt) -> File.rm(tgt) end)
 
-                result = delete_elem(result, 2)
+                result = Tuple.delete_at(result, 2)
             end
 
             :gen_server.call(coordinator, {:done, rule, data, owner, result}, :infinity)
