@@ -98,8 +98,9 @@ defmodule ExMake.Env do
         end
 
         if !is_list(list) do
-            raise(ExMake.EnvError[name: name,
-                                  description: "Value for key '#{name}' is not a list - cannot append element"])
+            raise(ExMake.EnvError,
+                  [name: name,
+                   description: "Value for key '#{name}' is not a list - cannot append element"])
         end
 
         :ets.insert(tab, {name, list ++ [value]})
@@ -123,8 +124,9 @@ defmodule ExMake.Env do
         end
 
         if !is_list(list) do
-            raise(ExMake.EnvError[name: name,
-                                  description: "Value for key '#{name}' is not a list - cannot prepend element"])
+            raise(ExMake.EnvError,
+                  [name: name,
+                   description: "Value for key '#{name}' is not a list - cannot prepend element"])
         end
 
         :ets.insert(tab, {name, [value | list]})
@@ -145,8 +147,9 @@ defmodule ExMake.Env do
         case :ets.lookup(tab, name) do
             [{_, list}] ->
                 if !is_list(list) do
-                    raise(ExMake.EnvError[name: name,
-                                          description: "Value for key '#{name}' is not a list - cannot retrieve"])
+                    raise(ExMake.EnvError,
+                          [name: name,
+                           description: "Value for key '#{name}' is not a list - cannot retrieve"])
                 end
 
                 list
@@ -170,8 +173,9 @@ defmodule ExMake.Env do
         end
 
         if !is_list(list) do
-            raise(ExMake.EnvError[name: name,
-                                  description: "Value for key '#{name}' is not a list - cannot delete element"])
+            raise(ExMake.EnvError,
+                  [name: name,
+                   description: "Value for key '#{name}' is not a list - cannot delete element"])
         end
 
         list = Enum.reject(list, fn(e) -> if is_binary(value), do: e == value, else: e =~ value end)

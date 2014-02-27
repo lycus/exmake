@@ -23,30 +23,34 @@ defmodule ExMake.Loader do
             File.cd!(dir, fn() -> Code.load_file(file) end)
         rescue
             ex in [Code.LoadError] ->
-                raise(ExMake.LoadError[file: file,
-                                       directory: dir,
-                                       error: ex,
-                                       description: "#{p}: Could not load file"])
+                raise(ExMake.LoadError,
+                      [file: file,
+                       directory: dir,
+                       error: ex,
+                       description: "#{p}: Could not load file"])
             ex in [CompileError] ->
-                raise(ExMake.LoadError[file: file,
-                                       directory: dir,
-                                       error: ex,
-                                       description: ex.message()])
+                raise(ExMake.LoadError,
+                      [file: file,
+                       directory: dir,
+                       error: ex,
+                       description: ex.message()])
         end
 
         cnt = Enum.count(list, fn({x, _}) -> atom_to_binary(x) |> String.ends_with?(".Exmakefile") end)
 
         cond do
             cnt == 0 ->
-                raise(ExMake.LoadError[file: file,
-                                       directory: dir,
-                                       error: nil,
-                                       description: "#{p}: No module ending in '.Exmakefile' defined"])
+                raise(ExMake.LoadError,
+                      [file: file,
+                       directory: dir,
+                       error: nil,
+                       description: "#{p}: No module ending in '.Exmakefile' defined"])
             cnt > 1 ->
-                raise(ExMake.LoadError[file: file,
-                                       directory: dir,
-                                       error: nil,
-                                       description: "#{p}: #{cnt} modules ending in '.Exmakefile' defined"])
+                raise(ExMake.LoadError,
+                      [file: file,
+                       directory: dir,
+                       error: nil,
+                       description: "#{p}: #{cnt} modules ending in '.Exmakefile' defined"])
             true -> :ok
         end
 
@@ -55,11 +59,11 @@ defmodule ExMake.Loader do
 
         Enum.each(rec, fn({sub, file}) ->
             if !String.valid?(sub) do
-                raise(ExMake.ScriptError[description: "Subdirectory path must be a string"])
+                raise(ExMake.ScriptError, [description: "Subdirectory path must be a string"])
             end
 
             if !String.valid?(file) do
-                raise(ExMake.ScriptError[description: "Subdirectory file must be a string"])
+                raise(ExMake.ScriptError, [description: "Subdirectory file must be a string"])
             end
         end)
 

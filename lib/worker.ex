@@ -156,7 +156,7 @@ defmodule ExMake.Worker do
                 manifest_files = Enum.concat(Enum.map(mods, fn({d, _, m, _}) ->
                     Enum.map(m.__exmake__(:manifest), fn(file) ->
                         if !String.valid?(file) do
-                            raise(ExMake.ScriptError[description: "Manifest file must be a string"])
+                            raise(ExMake.ScriptError, [description: "Manifest file must be a string"])
                         end
 
                         Path.join(d, file)
@@ -207,7 +207,7 @@ defmodule ExMake.Worker do
 
                 pass_end.("Locate Vertex (#{tgt})")
 
-                if !rule, do: raise(ExMake.UsageError[description: "Target '#{tgt}' not found"])
+                if !rule, do: raise(ExMake.UsageError, [description: "Target '#{tgt}' not found"])
 
                 {v, _} = rule
 
@@ -287,11 +287,11 @@ defmodule ExMake.Worker do
                 loc = "#{Path.join(d, f)}:#{elem(spec[:recipe], 3)}"
 
                 if !is_list(tgts) || Enum.any?(tgts, fn(t) -> !String.valid?(t) end) do
-                    raise(ExMake.ScriptError[description: "#{loc}: Invalid target list; must be a list of strings"])
+                    raise(ExMake.ScriptError, [description: "#{loc}: Invalid target list; must be a list of strings"])
                 end
 
                 if !is_list(srcs) || Enum.any?(srcs, fn(s) -> !String.valid?(s) end) do
-                    raise(ExMake.ScriptError[description: "#{loc}: Invalid source list; must be a list of strings"])
+                    raise(ExMake.ScriptError, [description: "#{loc}: Invalid source list; must be a list of strings"])
                 end
             end)
 
@@ -301,11 +301,11 @@ defmodule ExMake.Worker do
                 loc = "#{Path.join(d, f)}:#{elem(spec[:recipe], 3)}"
 
                 if !String.valid?(name) do
-                    raise(ExMake.ScriptError[description: "#{loc}: Invalid phony rule name; must be a string"])
+                    raise(ExMake.ScriptError, [description: "#{loc}: Invalid phony rule name; must be a string"])
                 end
 
                 if !is_list(srcs) || Enum.any?(srcs, fn(s) -> !is_binary(s) || !String.valid?(s) end) do
-                    raise(ExMake.ScriptError[description: "#{loc}: Invalid source list; must be a list of strings"])
+                    raise(ExMake.ScriptError, [description: "#{loc}: Invalid source list; must be a list of strings"])
                 end
             end)
         end)
@@ -348,7 +348,7 @@ defmodule ExMake.Worker do
 
         target_names = Enum.reduce(target_names, HashSet.new(), fn(n, set) ->
             if Set.member?(set, n) do
-                raise(ExMake.ScriptError[description: "Multiple rules mention target '#{n}'"])
+                raise(ExMake.ScriptError, [description: "Multiple rules mention target '#{n}'"])
             end
 
             Set.put(set, n)
@@ -362,7 +362,7 @@ defmodule ExMake.Worker do
             n = p[:name]
 
             if Set.member?(target_names, n) do
-                raise(ExMake.ScriptError[description: "Phony rule name '#{n}' conflicts with a rule"])
+                raise(ExMake.ScriptError, [description: "Phony rule name '#{n}' conflicts with a rule"])
             end
 
             Set.put(set, n)
@@ -419,7 +419,7 @@ defmodule ExMake.Worker do
                     if r[:targets] && (n = r2[:name]) do
                         r = inspect(ExMake.Helpers.make_presentable(r))
 
-                        raise(ExMake.ScriptError[description: "Rule #{r} depends on phony rule '#{n}'"])
+                        raise(ExMake.ScriptError, [description: "Rule #{r} depends on phony rule '#{n}'"])
                     end
 
                     case :digraph.add_edge(g, v, v2) do
@@ -429,9 +429,8 @@ defmodule ExMake.Worker do
                                        Enum.map(fn(x) -> ExMake.Helpers.make_presentable(x) end) |>
                                        Enum.map(fn(x) -> inspect(x) end)
 
-                            msg = "Cyclic dependency detected between\n#{r1}\nand\n#{r2}"
-
-                            raise(ExMake.ScriptError[description: msg])
+                            raise(ExMake.ScriptError,
+                                  [description: "Cyclic dependency detected between\n#{r1}\nand\n#{r2}"])
                         _ -> :ok
                     end
                 end
@@ -521,7 +520,7 @@ defmodule ExMake.Worker do
             else
                 Enum.each(r[:sources], fn(src) ->
                     if !File.exists?(src) do
-                        raise(ExMake.UsageError[description: "No rule to make target '#{src}'"])
+                        raise(ExMake.UsageError, [description: "No rule to make target '#{src}'"])
                     end
                 end)
 
@@ -531,7 +530,7 @@ defmodule ExMake.Worker do
                 src_time > tgt_time
             end
 
-            if stale, do: raise(ExMake.StaleError[rule: r])
+            if stale, do: raise(ExMake.StaleError, [rule: r])
 
             :digraph.del_vertex(graph, v)
         end)

@@ -8,7 +8,7 @@ defmodule ExMake.Runner do
                 {run, arg2} = if rule[:name] do
                     Enum.each(rule[:real_sources], fn(src) ->
                         if !File.exists?(src) do
-                            raise(ExMake.UsageError[description: "No rule to make target '#{src}'"])
+                            raise(ExMake.UsageError, [description: "No rule to make target '#{src}'"])
                         end
                     end)
 
@@ -16,7 +16,7 @@ defmodule ExMake.Runner do
                 else
                     Enum.each(rule[:sources], fn(src) ->
                         if !File.exists?(src) do
-                            raise(ExMake.UsageError[description: "No rule to make target '#{src}'"])
+                            raise(ExMake.UsageError, [description: "No rule to make target '#{src}'"])
                         end
                     end)
 
@@ -41,18 +41,18 @@ defmodule ExMake.Runner do
 
                     if (ncwd = File.cwd!()) != cwd do
                         r = inspect(ExMake.Helpers.make_presentable(rule))
-                        msg = "Recipe for rule #{r} changed directory from '#{cwd}' to '#{ncwd}'"
 
-                        raise(ExMake.ScriptError[description: msg])
+                        raise(ExMake.ScriptError,
+                              [description: "Recipe for rule #{r} changed directory from '#{cwd}' to '#{ncwd}'"])
                     end
 
                     if tgts = rule[:targets] do
                         Enum.each(tgts, fn(tgt) ->
                             if !File.exists?(tgt) do
                                 r = inspect(ExMake.Helpers.make_presentable(rule))
-                                msg = "Recipe for rule #{r} did not produce #{tgt} as expected"
 
-                                raise(ExMake.ScriptError[description: msg])
+                                raise(ExMake.ScriptError,
+                                      [description: "Recipe for rule #{r} did not produce #{tgt} as expected"])
                             end
                         end)
                     end

@@ -11,7 +11,7 @@ defmodule ExMake.Cache do
         case File.mkdir_p(dir) do
             {:error, r} ->
                 ExMake.Logger.log_debug("Failed to create cache directory '#{dir}': #{inspect(r)}")
-                raise(ExMake.CacheError[description: "Could not create cache directory '#{dir}'"])
+                raise(ExMake.CacheError, [description: "Could not create cache directory '#{dir}'"])
             _ -> :ok
         end
     end
@@ -93,7 +93,7 @@ defmodule ExMake.Cache do
         case :ets.tab2file(:exmake_env, String.to_char_list!(path)) do
             {:error, r} ->
                 ExMake.Logger.log_debug("Failed to save environment cache file '#{path}': #{inspect(r)}")
-                raise(ExMake.CacheError[description: "Could not save environment cache file '#{path}'"])
+                raise(ExMake.CacheError, [description: "Could not save environment cache file '#{path}'"])
             _ -> :ok
         end
     end
@@ -120,7 +120,7 @@ defmodule ExMake.Cache do
         case :ets.file2tab(String.to_char_list!(path)) do
             {:error, r} ->
                 ExMake.Logger.log_debug("Failed to load environment cache file '#{path}': #{inspect(r)}")
-                raise(ExMake.CacheError[description: "Could not load environment cache file '#{path}'"])
+                raise(ExMake.CacheError, [description: "Could not load environment cache file '#{path}'"])
             {:ok, tab} -> tab
         end
     end
@@ -150,7 +150,7 @@ defmodule ExMake.Cache do
             case :ets.tab2file(tab, String.to_char_list!(path)) do
                 {:error, r} ->
                     ExMake.Logger.log_debug("Failed to save graph cache file '#{path}': #{inspect(r)}")
-                    raise(ExMake.CacheError[description: "Could not save graph cache file '#{path}'"])
+                    raise(ExMake.CacheError, [description: "Could not save graph cache file '#{path}'"])
                 _ -> :ok
             end
         end)
@@ -176,7 +176,7 @@ defmodule ExMake.Cache do
             case :ets.file2tab(String.to_char_list!(path)) do
                 {:error, r} ->
                     ExMake.Logger.log_debug("Failed to load graph cache file '#{path}': #{inspect(r)}")
-                    raise(ExMake.CacheError[description: "Could not load graph cache file '#{path}'"])
+                    raise(ExMake.CacheError, [description: "Could not load graph cache file '#{path}'"])
                 {:ok, tab} -> tab
             end
         end)
@@ -205,7 +205,7 @@ defmodule ExMake.Cache do
         case File.write(path, data, [:append]) do
             {:error, r} ->
                 ExMake.Logger.log_debug("Failed to save manifest file '#{path}': #{inspect(r)}")
-                raise(ExMake.CacheError[description: "Could not save manifest file '#{path}'"])
+                raise(ExMake.CacheError, [description: "Could not save manifest file '#{path}'"])
             :ok -> :ok
         end
     end
@@ -229,7 +229,7 @@ defmodule ExMake.Cache do
             case File.write(path, bin) do
                 {:error, r} ->
                     ExMake.Logger.log_debug("Failed to save cached module '#{path}': #{inspect(r)}")
-                    raise(ExMake.CacheError[description: "Could not save cached module '#{path}'"])
+                    raise(ExMake.CacheError, [description: "Could not save cached module '#{path}'"])
                 :ok -> :ok
             end
         end)
@@ -249,7 +249,7 @@ defmodule ExMake.Cache do
             case :code.load_abs(String.to_char_list!(path)) do
                 {:error, r} ->
                     ExMake.Logger.log_debug("Failed to load cached module '#{beam}': #{inspect(r)}")
-                    raise(ExMake.CacheError[description: "Could not load cached module '#{beam}'"])
+                    raise(ExMake.CacheError, [description: "Could not load cached module '#{beam}'"])
                 _ -> :ok
             end
         end)
@@ -283,14 +283,14 @@ defmodule ExMake.Cache do
         case File.write(path_arg, args) do
             {:error, r} ->
                 ExMake.Logger.log_debug("Failed to save configuration arguments file '#{path_arg}': #{inspect(r)}")
-                raise(ExMake.CacheError[description: "Could not save configuration arguments file '#{path_arg}'"])
+                raise(ExMake.CacheError, [description: "Could not save configuration arguments file '#{path_arg}'"])
             :ok -> :ok
         end
 
         case File.write(path_env, vars) do
             {:error, r} ->
                 ExMake.Logger.log_debug("Failed to save configuration variables file '#{path_env}': #{inspect(r)}")
-                raise(ExMake.CacheError[description: "Could not save configuration variables file '#{path_env}'"])
+                raise(ExMake.CacheError, [description: "Could not save configuration variables file '#{path_env}'"])
             :ok -> :ok
         end
     end
@@ -312,7 +312,7 @@ defmodule ExMake.Cache do
                 r = if is_tuple(r) && tuple_size(r) == 3, do: :file.format_error(r), else: inspect(r)
 
                 ExMake.Logger.log_debug("Failed to load configuration arguments file '#{path_arg}': #{r}")
-                raise(ExMake.CacheError[description: "Could not load configuration arguments file '#{path_arg}'"])
+                raise(ExMake.CacheError, [description: "Could not load configuration arguments file '#{path_arg}'"])
             {:ok, args} -> args
         end
 
@@ -321,7 +321,7 @@ defmodule ExMake.Cache do
                 r = if is_tuple(r) && tuple_size(r) == 3, do: :file.format_error(r), else: inspect(r)
 
                 ExMake.Logger.log_debug("Failed to load configuration variables file '#{path_env}': #{r}")
-                raise(ExMake.CacheError[description: "Could not load configuration variables file '#{path_env}'"])
+                raise(ExMake.CacheError, [description: "Could not load configuration variables file '#{path_env}'"])
             {:ok, vars} -> vars
         end
 

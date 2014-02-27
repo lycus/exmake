@@ -122,7 +122,7 @@ defmodule ExMake.Lib do
         lib_mod = Module.concat(ExMake.Lib, lib)
 
         if !:code.is_loaded(lib_mod) do
-            raise(ExMake.ScriptError[description: "Library #{lib} must be loaded"])
+            raise(ExMake.ScriptError, [description: "Library #{lib} must be loaded"])
         end
     end
 

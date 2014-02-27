@@ -55,9 +55,10 @@ defmodule ExMake.Utils do
         {text, code} = recv.(recv, port, "")
 
         if code != 0 && !ignore do
-            raise(ExMake.ShellError[command: cmd,
-                                    output: text,
-                                    exit_code: code])
+            raise(ExMake.ShellError,
+                  [command: cmd,
+                   output: text,
+                   exit_code: code])
         end
 
         if String.strip(text) != "" && !silent do
@@ -119,7 +120,7 @@ defmodule ExMake.Utils do
         if !exe && !ignore do
             list = Enum.join(Enum.map(names, fn(s) -> "'#{s}'" end), ", ")
 
-            raise(ExMake.ScriptError[description: "Could not locate program #{list}#{var_desc}"])
+            raise(ExMake.ScriptError, [description: "Could not locate program #{list}#{var_desc}"])
         end
 
         if !silent do
