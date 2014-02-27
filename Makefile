@@ -28,7 +28,7 @@ test:
 	@$(MIX) test --trace
 
 dialyze: $(_build)/exmake.app
-	$(DIALYZER) --no_check_plt -r ebin \
+	$(DIALYZER) --no_check_plt -r $(_build) \
 		-Wunmatched_returns \
 		-Werror_handling
 
