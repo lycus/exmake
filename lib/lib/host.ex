@@ -42,7 +42,7 @@ defmodule ExMake.Lib.Host do
         sys_arch = :erlang.system_info(:system_architecture) |>
                    String.from_char_list!() |>
                    String.split("-") |>
-                   Enum.first()
+                   Enum.fetch!(0)
 
         re = fn(re) -> Regex.match?(re, sys_arch) end
 
