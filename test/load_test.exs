@@ -30,8 +30,7 @@ defmodule ExMake.Test.LoadTest do
     test "single module" do
         s = """
         task "all",
-             [],
-             _, _ do
+             [] do
         end
         """
 
@@ -45,8 +44,7 @@ defmodule ExMake.Test.LoadTest do
     test "custom file name" do
         s = """
         task "all",
-             [],
-             _, _ do
+             [] do
         end
         """
 

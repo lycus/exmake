@@ -33,14 +33,11 @@ defmodule ExMake.Runner do
                 end
 
                 if run do
-                    {m, f, a, _} = rule[:recipe]
-
-                    # Add the directory as an argument if needed.
-                    if a > length(args), do: args = args ++ [rule[:directory]]
+                    {m, f, _} = rule[:recipe]
 
                     cwd = File.cwd!()
 
-                    apply(m, f, args)
+                    apply(m, f, args ++ [rule[:directory]])
 
                     if (ncwd = File.cwd!()) != cwd do
                         r = inspect(ExMake.Helpers.make_presentable(rule))

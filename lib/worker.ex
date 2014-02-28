@@ -317,7 +317,7 @@ defmodule ExMake.Worker do
             Enum.each(m.__exmake__(:rules), fn(spec) ->
                 tgts = spec[:targets]
                 srcs = spec[:sources]
-                loc = "#{Path.join(d, f)}:#{elem(spec[:recipe], 3)}"
+                loc = "#{Path.join(d, f)}:#{elem(spec[:recipe], 2)}"
 
                 if !is_list(tgts) || Enum.any?(tgts, fn(t) -> !String.valid?(t) end) do
                     raise(ExMake.ScriptError, [description: "#{loc}: Invalid target list; must be a list of strings"])
@@ -331,7 +331,7 @@ defmodule ExMake.Worker do
             Enum.each(m.__exmake__(:tasks), fn(spec) ->
                 name = spec[:name]
                 srcs = spec[:sources]
-                loc = "#{Path.join(d, f)}:#{elem(spec[:recipe], 3)}"
+                loc = "#{Path.join(d, f)}:#{elem(spec[:recipe], 2)}"
 
                 if !String.valid?(name) do
                     raise(ExMake.ScriptError, [description: "#{loc}: Invalid task name; must be a string"])

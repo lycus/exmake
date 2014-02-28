@@ -199,37 +199,18 @@ defmodule ExMake.File do
 
     The first argument to the macro is the list of files that the rule needs in order
     to produce output files. The second argument is the list of files that the rule
-    produces when executed. Following those lists are two argument patterns and finally
-    the recipe `do` block that performs actual work. The argument patterns work just
-    like in any other Elixir function definition. The first argument is the list of
-    source files, and the second is the list of output files.
+    produces when executed. Following those lists are three argument patterns and
+    finally the recipe `do` block that performs actual work. The argument patterns work
+    just like in any other Elixir function definition. The first argument is the list of
+    source files, the second is the list of output files, and the third is the directory
+    of the script file that the rule is defined in.
 
     The list of source files can be both source code files and intermediary files that
     are produced by other rules. In the latter case, ExMake will invoke the necessary
     rules to produce those files.
     """
-    defmacro rule(targets, sources, srcs_arg, tgts_arg, [do: block]) do
-        srcs_arg = Macro.escape(srcs_arg)
-        tgts_arg = Macro.escape(tgts_arg)
-        block = Macro.escape(block)
-
-        quote bind_quoted: binding do
-            line = __ENV__.line()
-            fn_name = :"rule_#{length(@exmake_rules) + 1}_line_#{line}"
-
-            @doc false
-            def unquote(fn_name)(unquote(srcs_arg),
-                                 unquote(tgts_arg)), do: unquote(block)
-
-            @exmake_rules Keyword.put([targets: targets, sources: sources], :recipe, {__MODULE__, fn_name, 2, line})
-        end
-    end
-
-    @doc """
-    Same as `rule/5`, but receives as a third argument the directory of the
-    script file that the rule is defined in.
-    """
-    defmacro rule(targets, sources, srcs_arg, tgts_arg, dir_arg, [do: block]) do
+    defmacro rule(targets, sources, srcs_arg \\ (quote do: _), tgts_arg \\ (quote do: _),
+                  dir_arg \\ (quote do: _), [do: block]) do
         srcs_arg = Macro.escape(srcs_arg)
         tgts_arg = Macro.escape(tgts_arg)
         dir_arg = Macro.escape(dir_arg)
@@ -244,7 +225,7 @@ defmodule ExMake.File do
                                  unquote(tgts_arg),
                                  unquote(dir_arg)), do: unquote(block)
 
-            @exmake_rules Keyword.put([targets: targets, sources: sources], :recipe, {__MODULE__, fn_name, 3, line})
+            @exmake_rules Keyword.put([targets: targets, sources: sources], :recipe, {__MODULE__, fn_name, line})
         end
     end
 
@@ -257,8 +238,7 @@ defmodule ExMake.File do
             use ExMake.File
 
             task "all",
-                 ["foo.o"],
-                 _, _ do
+                 ["foo.o"] do
             end
 
             task "clean",
@@ -283,18 +263,21 @@ defmodule ExMake.File do
     to date).
 
     The first argument to the macro is the name of the task. The second argument is
-    the list of files that the task depends on. Following those lists are two argument
+    the list of files that the task depends on. Following those lists are three argument
     patterns and finally the recipe `do` block that performs actual work. The argument
     patterns work just like in any other Elixir function definition. The first argument
-    is the name of the task, and the second is the list of source files.
+    is the name of the task, the second is the list of source files, and the third is
+    the directory of the script file that the task is defined in.
 
     The list of source files can be both source code files and intermediary files that
     are produced by other rules. In the latter case, ExMake will invoke the necessary
     rules to produce those files.
     """
-    defmacro task(name, sources, name_arg, srcs_arg, [do: block]) do
+    defmacro task(name, sources, name_arg \\ (quote do: _), srcs_arg \\ (quote do: _),
+                  dir_arg \\ (quote do: _), [do: block]) do
         name_arg = Macro.escape(name_arg)
         srcs_arg = Macro.escape(srcs_arg)
+        dir_arg = Macro.escape(dir_arg)
         block = Macro.escape(block)
 
         quote bind_quoted: binding do
@@ -303,32 +286,10 @@ defmodule ExMake.File do
 
             @doc false
             def unquote(fn_name)(unquote(name_arg),
-                                 unquote(srcs_arg)), do: unquote(block)
-
-            @exmake_tasks Keyword.put([name: name, sources: sources], :recipe, {__MODULE__, fn_name, 2, line})
-        end
-    end
-
-    @doc """
-    Same as `task/5`, but receives as a third argument the directory of the
-    script file that the task is defined in.
-    """
-    defmacro task(name, sources, name_arg, srcs_arg, dir_arg, [do: block]) do
-        name_arg = Macro.escape(name_arg)
-        srcs_arg = Macro.escape(srcs_arg)
-        dir_arg = Macro.escape(dir_arg)
-        block = Macro.escape(block)
-
-        quote bind_quoted: binding do
-            line = __ENV__.line()
-            fn_name = :"tasks_#{length(@exmake_tasks) + 1}_line_#{line}"
-
-            @doc false
-            def unquote(fn_name)(unquote(name_arg),
                                  unquote(srcs_arg),
                                  unquote(dir_arg)), do: unquote(block)
 
-            @exmake_tasks Keyword.put([name: name, sources: sources], :recipe, {__MODULE__, fn_name, 3, line})
+            @exmake_tasks Keyword.put([name: name, sources: sources], :recipe, {__MODULE__, fn_name, line})
         end
     end
 
@@ -347,8 +308,7 @@ defmodule ExMake.File do
             end
 
             task "all",
-                 ["foo.o"],
-                 _, _ do
+                 ["foo.o"] do
             end
 
             task "clean",
@@ -369,33 +329,20 @@ defmodule ExMake.File do
     are executed in the order they were defined. They are always executed serially. Only
     the fallback tasks in the entry point build script are executed.
 
+    The first argument to the macro is an argument pattern. The last argument is the
+    `do` block that performs actual work. The argument pattern works just like in any
+    other Elixir function definition. The argument is the directory of the script file
+    that the fallback task is defined in.
+
     In the case where some targets mentioned on the command line *do* exist, even one
     target that doesn't exist will make ExMake discard all mentioned targets and only
     execute fallbacks.
 
     Fallback tasks cannot be invoked explicitly.
     """
-    defmacro fallback([do: block]) do
-        block = Macro.escape(block)
-
-        quote bind_quoted: binding do
-            line = __ENV__.line()
-            fn_name = :"fallback_#{length(@exmake_fallbacks) + 1}_line_#{line}"
-
-            @doc false
-            def unquote(fn_name)(), do: unquote(block)
-
-            @exmake_fallbacks Keyword.put([], :recipe, {__MODULE__, fn_name, 0, line})
-        end
-    end
-
-    @doc """
-    Same as `fallback/1`, but receives as a first argument the directory of
-    the script file that the task is defined in.
-    """
-    defmacro fallback(dir_arg, [do: block]) do
-        block = Macro.escape(block)
+    defmacro fallback(dir_arg \\ (quote do: _), [do: block]) do
         dir_arg = Macro.escape(dir_arg)
+        block = Macro.escape(block)
 
         quote bind_quoted: binding do
             line = __ENV__.line()
@@ -404,7 +351,7 @@ defmodule ExMake.File do
             @doc false
             def unquote(fn_name)(unquote(dir_arg)), do: unquote(block)
 
-            @exmake_fallbacks Keyword.put([], :recipe, {__MODULE__, fn_name, 1, line})
+            @exmake_fallbacks Keyword.put([], :recipe, {__MODULE__, fn_name, line})
         end
     end
 end
