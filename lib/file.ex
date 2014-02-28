@@ -12,6 +12,10 @@ defmodule ExMake.File do
 
     Using this module implicitly imports the following modules:
 
+    * `File`
+    * `IO`
+    * `Path`
+    * `System`
     * `ExMake.Env`
     * `ExMake.File`
     * `ExMake.Utils`
@@ -27,6 +31,10 @@ defmodule ExMake.File do
     @doc false
     defmacro __using__(_) do
         quote do
+            import File
+            import IO
+            import Path
+            import System
             import ExMake.Env
             import ExMake.File
             import ExMake.Utils
