@@ -14,7 +14,7 @@ defmodule ExMake.Runner do
                             end
                         end)
 
-                        {true, [rule[:sources], rule[:name]]}
+                        {true, [rule[:name], rule[:sources]]}
                     # Handle rules.
                     rule[:targets] ->
                         Enum.each(rule[:sources], fn(src) ->
