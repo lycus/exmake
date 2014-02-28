@@ -295,13 +295,13 @@ defmodule ExMake.Worker do
                 end
             end)
 
-            Enum.each(m.__exmake__(:phony_rules), fn(spec) ->
+            Enum.each(m.__exmake__(:tasks), fn(spec) ->
                 name = spec[:name]
                 srcs = spec[:sources]
                 loc = "#{Path.join(d, f)}:#{elem(spec[:recipe], 3)}"
 
                 if !String.valid?(name) do
-                    raise(ExMake.ScriptError, [description: "#{loc}: Invalid phony rule name; must be a string"])
+                    raise(ExMake.ScriptError, [description: "#{loc}: Invalid task name; must be a string"])
                 end
 
                 if !is_list(srcs) || Enum.any?(srcs, fn(s) -> !is_binary(s) || !String.valid?(s) end) do
@@ -326,11 +326,11 @@ defmodule ExMake.Worker do
 
         pass_end.("Sanitize Rule Paths")
 
-        pass_go.("Sanitize Phony Rule Paths")
+        pass_go.("Sanitize Task Paths")
 
-        # Do the same for phony rules.
-        phony_rules = Enum.concat(Enum.map(mods, fn({d, _, m}) ->
-            Enum.map(m.__exmake__(:phony_rules), fn(spec) ->
+        # Do the same for tasks.
+        tasks = Enum.concat(Enum.map(mods, fn({d, _, m}) ->
+            Enum.map(m.__exmake__(:tasks), fn(spec) ->
                 name = Path.join(d, spec[:name])
                 srcs = Enum.map(spec[:sources], fn(f) -> Path.join(d, f) end)
 
@@ -338,7 +338,7 @@ defmodule ExMake.Worker do
             end)
         end))
 
-        pass_end.("Sanitize Phony Rule Paths")
+        pass_end.("Sanitize Task Paths")
 
         pass_go.("Check Rule Target Lists")
 
@@ -356,29 +356,29 @@ defmodule ExMake.Worker do
 
         pass_end.("Check Rule Target Lists")
 
-        pass_go.("Check Phony Rule Names")
+        pass_go.("Check Task Names")
 
-        phony_names = Enum.reduce(phony_rules, HashSet.new(), fn(p, set) ->
+        task_names = Enum.reduce(tasks, HashSet.new(), fn(p, set) ->
             n = p[:name]
 
             if Set.member?(target_names, n) do
-                raise(ExMake.ScriptError, [description: "Phony rule name '#{n}' conflicts with a rule"])
+                raise(ExMake.ScriptError, [description: "Task name '#{n}' conflicts with a rule"])
             end
 
             Set.put(set, n)
         end)
 
-        pass_end.("Check Phony Rule Names")
+        pass_end.("Check Task Names")
 
-        pass_go.("Determine Phony Rule Sources")
+        pass_go.("Determine Task Sources")
 
-        phony_rules = Enum.map(phony_rules, fn(r) ->
-            srcs = Set.difference(HashSet.new(r[:sources]), phony_names)
+        tasks = Enum.map(tasks, fn(r) ->
+            srcs = Set.difference(HashSet.new(r[:sources]), task_names)
 
             Keyword.put(r, :real_sources, srcs)
         end)
 
-        pass_end.("Determine Phony Rule Sources")
+        pass_end.("Determine Task Sources")
 
         pass_go.("Create DAG")
 
@@ -390,7 +390,7 @@ defmodule ExMake.Worker do
 
         # Add the rules to the graph as vertices.
         Enum.each(rules, fn(r) -> :digraph.add_vertex(g, :digraph.add_vertex(g), r) end)
-        Enum.each(phony_rules, fn(r) -> :digraph.add_vertex(g, :digraph.add_vertex(g), r) end)
+        Enum.each(tasks, fn(r) -> :digraph.add_vertex(g, :digraph.add_vertex(g), r) end)
 
         pass_end.("Create DAG Vertices")
 
@@ -419,7 +419,7 @@ defmodule ExMake.Worker do
                     if r[:targets] && (n = r2[:name]) do
                         r = inspect(ExMake.Helpers.make_presentable(r))
 
-                        raise(ExMake.ScriptError, [description: "Rule #{r} depends on phony rule '#{n}'"])
+                        raise(ExMake.ScriptError, [description: "Rule #{r} depends on task '#{n}'"])
                     end
 
                     case :digraph.add_edge(g, v, v2) do
@@ -514,7 +514,7 @@ defmodule ExMake.Worker do
             {_, r} = :digraph.vertex(graph, v)
 
             stale = if r[:name] do
-                ExMake.Logger.warn("'--question' with phony rules is meaningless; they are always considered stale")
+                ExMake.Logger.warn("'--question' with tasks is meaningless; they are always considered stale")
 
                 true
             else

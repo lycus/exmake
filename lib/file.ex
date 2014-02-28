@@ -35,7 +35,7 @@ defmodule ExMake.File do
 
             Module.register_attribute(__MODULE__, :exmake_subdirectories, [accumulate: true, persist: true])
             Module.register_attribute(__MODULE__, :exmake_rules, [accumulate: true, persist: true])
-            Module.register_attribute(__MODULE__, :exmake_phony_rules, [accumulate: true, persist: true])
+            Module.register_attribute(__MODULE__, :exmake_tasks, [accumulate: true, persist: true])
             Module.register_attribute(__MODULE__, :exmake_manifest, [accumulate: true, persist: true])
         end
     end
@@ -45,7 +45,7 @@ defmodule ExMake.File do
         quote do
             def __exmake__(:subdirectories), do: Enum.reverse(@exmake_subdirectories)
             def __exmake__(:rules), do: Enum.reverse(@exmake_rules)
-            def __exmake__(:phony_rules), do: Enum.reverse(@exmake_phony_rules)
+            def __exmake__(:tasks), do: Enum.reverse(@exmake_tasks)
             def __exmake__(:manifest), do: Enum.reverse(@exmake_manifest)
         end
     end
@@ -239,21 +239,21 @@ defmodule ExMake.File do
     end
 
     @doc %S"""
-    Defines a phony rule.
+    Defines a task.
 
     Example:
 
         defmodule MyProject.Exmakefile do
             use ExMake.File
 
-            phony "all",
-                  ["foo.o"],
-                  _, _ do
+            task "all",
+                 ["foo.o"],
+                 _, _ do
             end
 
-            phony "clean",
-                  [],
-                  _, _, dir do
+            task "clean",
+                 [],
+                 _, _, dir do
                 Enum.each(Path.wildcard(Path.join(dir, "*.o")), fn(f) -> File.rm!(f) end)
             end
 
@@ -264,47 +264,46 @@ defmodule ExMake.File do
             end
         end
 
-    A phony rule is similar to a regular rule, but with the significant difference that
-    it has no target files. That is, it acts more as a command or shortcut. In the
-    example above, the `all` rule depends on `foo.o` but performs no work itself. This
-    means that whenever the `all` rule is invoked, it'll make sure `foo.o` is up to
-    date. The `clean` rule, on the other hand, has an empty `sources` list meaning
+    A task is similar to a regular rule, but with the significant difference that it
+    has no target files. That is, it acts more as a command or shortcut. In the
+    example above, the `all` task depends on `foo.o` but performs no work itself. This
+    means that whenever the `all` task is invoked, it'll make sure `foo.o` is up to
+    date. The `clean` task, on the other hand, has an empty `sources` list meaning
     that it will always execute when invoked (since there's no way to know if it's up
     to date).
 
-    The first argument to the macro is the name of the phony rule. The second argument
-    is the list of files that the rule produces when executed. Following those lists
-    are two argument patterns and finally the recipe `do` block that performs actual
-    work. The argument patterns work just like in any other Elixir function definition.
-    The first argument is the name of the rule, and the second is the list of output
-    files.
+    The first argument to the macro is the name of the task. The second argument is
+    the list of files that the task depends on. Following those lists are two argument
+    patterns and finally the recipe `do` block that performs actual work. The argument
+    patterns work just like in any other Elixir function definition. The first argument
+    is the name of the task, and the second is the list of source files.
 
     The list of source files can be both source code files and intermediary files that
     are produced by other rules. In the latter case, ExMake will invoke the necessary
     rules to produce those files.
     """
-    defmacro phony(name, sources, name_arg, srcs_arg, [do: block]) do
+    defmacro task(name, sources, name_arg, srcs_arg, [do: block]) do
         name_arg = Macro.escape(name_arg)
         srcs_arg = Macro.escape(srcs_arg)
         block = Macro.escape(block)
 
         quote bind_quoted: binding do
             line = __ENV__.line()
-            fn_name = :"phony_rule_#{length(@exmake_phony_rules) + 1}_line_#{line}"
+            fn_name = :"task_#{length(@exmake_tasks) + 1}_line_#{line}"
 
             @doc false
             def unquote(fn_name)(unquote(name_arg),
                                  unquote(srcs_arg)), do: unquote(block)
 
-            @exmake_phony_rules Keyword.put([name: name, sources: sources], :recipe, {__MODULE__, fn_name, 2, line})
+            @exmake_tasks Keyword.put([name: name, sources: sources], :recipe, {__MODULE__, fn_name, 2, line})
         end
     end
 
     @doc """
-    Same as `phony/5`, but receives as a third argument the directory of the
-    script file that the rule is defined in.
+    Same as `task/5`, but receives as a third argument the directory of the
+    script file that the task is defined in.
     """
-    defmacro phony(name, sources, name_arg, srcs_arg, dir_arg, [do: block]) do
+    defmacro task(name, sources, name_arg, srcs_arg, dir_arg, [do: block]) do
         name_arg = Macro.escape(name_arg)
         srcs_arg = Macro.escape(srcs_arg)
         dir_arg = Macro.escape(dir_arg)
@@ -312,14 +311,14 @@ defmodule ExMake.File do
 
         quote bind_quoted: binding do
             line = __ENV__.line()
-            fn_name = :"phony_rule_#{length(@exmake_phony_rules) + 1}_line_#{line}"
+            fn_name = :"tasks_#{length(@exmake_tasks) + 1}_line_#{line}"
 
             @doc false
             def unquote(fn_name)(unquote(name_arg),
                                  unquote(srcs_arg),
                                  unquote(dir_arg)), do: unquote(block)
 
-            @exmake_phony_rules Keyword.put([name: name, sources: sources], :recipe, {__MODULE__, fn_name, 3, line})
+            @exmake_tasks Keyword.put([name: name, sources: sources], :recipe, {__MODULE__, fn_name, 3, line})
         end
     end
 end

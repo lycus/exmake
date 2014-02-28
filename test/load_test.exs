@@ -29,9 +29,9 @@ defmodule ExMake.Test.LoadTest do
 
     test "single module" do
         s = """
-        phony "all",
-              [],
-              _, _ do
+        task "all",
+             [],
+             _, _ do
         end
         """
 
@@ -44,9 +44,9 @@ defmodule ExMake.Test.LoadTest do
 
     test "custom file name" do
         s = """
-        phony "all",
-              [],
-              _, _ do
+        task "all",
+             [],
+             _, _ do
         end
         """
 
