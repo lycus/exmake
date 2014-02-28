@@ -59,6 +59,7 @@ defmodule ExMake.Lib.FSharp do
                  srcs, [tgt | _], dir do
                 flags = Enum.join(@exm_fsharp_opts[:flags] || [], " ")
                 srcs = if k = @exm_fsharp_opts[:key_file], do: List.delete(srcs, Path.join(dir, k)), else: srcs
+                srcs = Enum.join(srcs, " ")
                 kf = if k, do: "--keyfile:#{Path.join(dir, k)}"
                 doc = if s = @exm_fsharp_opts[:doc_file], do: "--doc:#{Path.join(dir, s)}"
                 libs = list_get("FSHARPC_LIBS") ++ (@exm_fsharp_opts[:libs] || []) |>
