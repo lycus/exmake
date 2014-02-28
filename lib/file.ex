@@ -36,6 +36,7 @@ defmodule ExMake.File do
             Module.register_attribute(__MODULE__, :exmake_subdirectories, [accumulate: true, persist: true])
             Module.register_attribute(__MODULE__, :exmake_rules, [accumulate: true, persist: true])
             Module.register_attribute(__MODULE__, :exmake_tasks, [accumulate: true, persist: true])
+            Module.register_attribute(__MODULE__, :exmake_fallbacks, [accumulate: true, persist: true])
             Module.register_attribute(__MODULE__, :exmake_manifest, [accumulate: true, persist: true])
         end
     end
@@ -46,6 +47,7 @@ defmodule ExMake.File do
             def __exmake__(:subdirectories), do: Enum.reverse(@exmake_subdirectories)
             def __exmake__(:rules), do: Enum.reverse(@exmake_rules)
             def __exmake__(:tasks), do: Enum.reverse(@exmake_tasks)
+            def __exmake__(:fallbacks), do: Enum.reverse(@exmake_fallbacks)
             def __exmake__(:manifest), do: Enum.reverse(@exmake_manifest)
         end
     end
@@ -319,6 +321,82 @@ defmodule ExMake.File do
                                  unquote(dir_arg)), do: unquote(block)
 
             @exmake_tasks Keyword.put([name: name, sources: sources], :recipe, {__MODULE__, fn_name, 3, line})
+        end
+    end
+
+    @doc %S"""
+    Defines a fallback task.
+
+    Example:
+
+        defmodule MyProject.Exmakefile do
+            use ExMake.File
+
+            fallback do
+                IO.puts "The primary tasks of this build script are:"
+                IO.puts "all - build everything; default if no other task is mentioned"
+                IO.puts "clean - clean up intermediate and output files"
+            end
+
+            task "all",
+                 ["foo.o"],
+                 _, _ do
+            end
+
+            task "clean",
+                 [],
+                 _, _, dir do
+                Enum.each(Path.wildcard(Path.join(dir, "*.o")), fn(f) -> File.rm!(f) end)
+            end
+
+            rule ["foo.o"],
+                 ["foo.c"],
+                 [src], [tgt] do
+                shell("${CC} -c #{src} -o #{tgt}")
+            end
+        end
+
+    This defines a fallback task that is executed if a target mentioned on the command
+    line is unknown to ExMake. There can be multiple fallback tasks, in which case they
+    are executed in the order they were defined. They are always executed serially. Only
+    the fallback tasks in the entry point build script are executed.
+
+    In the case where some targets mentioned on the command line *do* exist, even one
+    target that doesn't exist will make ExMake discard all mentioned targets and only
+    execute fallbacks.
+
+    Fallback tasks cannot be invoked explicitly.
+    """
+    defmacro fallback([do: block]) do
+        block = Macro.escape(block)
+
+        quote bind_quoted: binding do
+            line = __ENV__.line()
+            fn_name = :"fallback_#{length(@exmake_fallbacks) + 1}_line_#{line}"
+
+            @doc false
+            def unquote(fn_name)(), do: unquote(block)
+
+            @exmake_fallbacks Keyword.put([], :recipe, {__MODULE__, fn_name, 0, line})
+        end
+    end
+
+    @doc """
+    Same as `fallback/1`, but receives as a first argument the directory of
+    the script file that the task is defined in.
+    """
+    defmacro fallback(dir_arg, [do: block]) do
+        block = Macro.escape(block)
+        dir_arg = Macro.escape(dir_arg)
+
+        quote bind_quoted: binding do
+            line = __ENV__.line()
+            fn_name = :"fallback_#{length(@exmake_fallbacks) + 1}_line_#{line}"
+
+            @doc false
+            def unquote(fn_name)(unquote(dir_arg)), do: unquote(block)
+
+            @exmake_fallbacks Keyword.put([], :recipe, {__MODULE__, fn_name, 1, line})
         end
     end
 end

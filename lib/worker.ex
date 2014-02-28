@@ -95,7 +95,7 @@ defmodule ExMake.Worker do
                 stale
             end
 
-            g = if stale do
+            {g, f} = if stale do
                 # If the cache is stale and the configuration
                 # files exist, we should still load them and
                 # attempt to use them since we'll be running
@@ -139,6 +139,16 @@ defmodule ExMake.Worker do
 
                 pass_end.("Save Graph Cache")
 
+                # We only care about the fallbacks in the entry
+                # point script, and don't need to check anything.
+                f = elem(hd(mods), 2).__exmake__(:fallbacks)
+
+                pass_go.("Save Fallback Cache")
+
+                ExMake.Cache.save_fallbacks(f)
+
+                pass_end.("Save Fallback Cache")
+
                 pass_go.("Save Configuration Cache")
 
                 vars = ExMake.Coordinator.get_libraries() |>
@@ -173,7 +183,7 @@ defmodule ExMake.Worker do
 
                 pass_end.("Save Cache Manifest")
 
-                g
+                {g, f}
             else
                 pass_go.("Load Module Cache")
 
@@ -193,22 +203,45 @@ defmodule ExMake.Worker do
 
                 pass_end.("Load Graph Cache")
 
-                g
+                pass_go.("Load Fallback Cache")
+
+                f = ExMake.Cache.load_fallbacks()
+
+                pass_end.("Load Fallback Cache")
+
+                {g, f}
             end
 
-            # Now create pruned graphs for each target and process them.
-            # We have to do this after loading the cached graph because
-            # the exact layout of the pruned graph depends on the target(s)
-            # given to ExMake on the command line.
-            Enum.each(cfg.targets(), fn(tgt) ->
+            tgts = Enum.map(cfg.targets(), fn(tgt) ->
                 pass_go.("Locate Vertex (#{tgt})")
 
                 rule = ExMake.Helpers.get_target(g, tgt)
 
                 pass_end.("Locate Vertex (#{tgt})")
 
-                if !rule, do: raise(ExMake.UsageError, [description: "Target '#{tgt}' not found"])
+                {tgt, rule}
+            end)
 
+            bad = Enum.find(tgts, fn({_, r}) -> !r end)
+
+            if bad do
+                # Process fallbacks serially if we have any.
+                Enum.each(f, fn(r) ->
+                    ExMake.Coordinator.enqueue(r, nil)
+
+                    receive do
+                        {:exmake_done, _, _, _} -> :ok
+                    end
+                end)
+
+                raise(ExMake.UsageError, [description: "Target '#{elem(bad, 0)}' not found"])
+            end
+
+            # Now create pruned graphs for each target and process them.
+            # We have to do this after loading the cached graph because
+            # the exact layout of the pruned graph depends on the target(s)
+            # given to ExMake on the command line.
+            Enum.each(tgts, fn({tgt, rule}) ->
                 {v, _} = rule
 
                 pass_go.("Minimize DAG (#{tgt})")

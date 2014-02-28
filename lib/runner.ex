@@ -5,39 +5,42 @@ defmodule ExMake.Runner do
     def start(coordinator, rule, data, owner) do
         spawn(fn() ->
             result = try do
-                {run, arg2} = if rule[:name] do
-                    Enum.each(rule[:real_sources], fn(src) ->
-                        if !File.exists?(src) do
-                            raise(ExMake.UsageError, [description: "No rule to make target '#{src}'"])
-                        end
-                    end)
+                {run, args} = cond do
+                    # Handle tasks.
+                    rule[:name] ->
+                        Enum.each(rule[:real_sources], fn(src) ->
+                            if !File.exists?(src) do
+                                raise(ExMake.UsageError, [description: "No rule to make target '#{src}'"])
+                            end
+                        end)
 
-                    {true, rule[:name]}
-                else
-                    Enum.each(rule[:sources], fn(src) ->
-                        if !File.exists?(src) do
-                            raise(ExMake.UsageError, [description: "No rule to make target '#{src}'"])
-                        end
-                    end)
+                        {true, [rule[:sources], rule[:name]]}
+                    # Handle rules.
+                    rule[:targets] ->
+                        Enum.each(rule[:sources], fn(src) ->
+                            if !File.exists?(src) do
+                                raise(ExMake.UsageError, [description: "No rule to make target '#{src}'"])
+                            end
+                        end)
 
-                    src_time = Enum.map(rule[:sources], fn(src) -> ExMake.Helpers.last_modified(src) end) |> Enum.max()
-                    tgt_time = Enum.map(rule[:targets], fn(tgt) -> ExMake.Helpers.last_modified(tgt) end) |> Enum.min()
+                        src_time = Enum.map(rule[:sources], fn(src) -> ExMake.Helpers.last_modified(src) end) |> Enum.max()
+                        tgt_time = Enum.map(rule[:targets], fn(tgt) -> ExMake.Helpers.last_modified(tgt) end) |> Enum.min()
 
-                    {src_time > tgt_time, rule[:targets]}
+                        {src_time > tgt_time, [rule[:sources], rule[:targets]]}
+                    # Handle fallbacks.
+                    true ->
+                        {true, []}
                 end
 
                 if run do
                     {m, f, a, _} = rule[:recipe]
 
-                    rule_args = [rule[:sources], arg2]
-
-                    if a >= 3 do
-                        rule_args = rule_args ++ [rule[:directory]]
-                    end
+                    # Add the directory as an argument if needed.
+                    if a > length(args), do: args = args ++ [rule[:directory]]
 
                     cwd = File.cwd!()
 
-                    apply(m, f, rule_args)
+                    apply(m, f, args)
 
                     if (ncwd = File.cwd!()) != cwd do
                         r = inspect(ExMake.Helpers.make_presentable(rule))

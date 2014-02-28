@@ -21,6 +21,7 @@ defmodule ExMake.Cache do
         [Path.join(dir, "vertices.dag"),
          Path.join(dir, "edges.dag"),
          Path.join(dir, "neighbors.dag"),
+         Path.join(dir, "fallbacks.trm"),
          Path.join(dir, "table.env"),
          Path.join(dir, "manifest.lst"),
          Path.join(dir, "config.env"),
@@ -184,6 +185,52 @@ defmodule ExMake.Cache do
         [vertices, edges, neighbors] = list
 
         {:digraph, vertices, edges, neighbors, false}
+    end
+
+    @doc """
+    Saves the given list of fallback tasks to the given
+    cache directory. Raises `ExMake.CacheError` if
+    something went wrong.
+
+    `list` must be a list of keyword lists. `dir` must
+    be the path to the cache directory.
+    """
+    @spec save_fallbacks([Keyword.t()], Path.t()) :: :ok
+    def save_fallbacks(list, dir \\ ".exmake") do
+        ensure_cache_dir(dir)
+
+        path = Path.join(dir, "fallbacks.trm")
+        data = list |>
+               Enum.map(fn(x) -> iolist_to_binary(:io_lib.format('~p.~n', [x])) end) |>
+               Enum.join()
+
+        case File.write(path, data) do
+            {:error, r} ->
+                ExMake.Logger.log_debug("Failed to save fallbacks file '#{path}': #{inspect(r)}")
+                raise(ExMake.CacheError, [description: "Could not save fallbacks file '#{path}'"])
+            :ok -> :ok
+        end
+    end
+
+    @doc """
+    Loads a fallback task list from the given cache
+    directory and returns it. Raises `ExMake.CacheError`
+    if something went wrong.
+
+    `dir` must be the path to the cache directory.
+    """
+    @spec load_fallbacks(Path.t()) :: [Keyword.t()]
+    def load_fallbacks(dir \\ ".exmake") do
+        path = Path.join(dir, "fallbacks.trm")
+
+        case :file.consult(path) do
+            {:error, r} ->
+                r = if is_tuple(r) && tuple_size(r) == 3, do: :file.format_error(r), else: inspect(r)
+
+                ExMake.Logger.log_debug("Failed to load fallbacks file '#{path}': #{r}")
+                raise(ExMake.CacheError, [description: "Could not load fallbacks file '#{path}'"])
+            {:ok, list} -> list
+        end
     end
 
     @doc """
