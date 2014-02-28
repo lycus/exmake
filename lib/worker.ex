@@ -296,7 +296,7 @@ defmodule ExMake.Worker do
 
                     Enum.each(1 .. n, fn(_) ->
                         receive do
-                            {:exmake_done, _, _} -> :ok
+                            {:exmake_done, _, _, _} -> :ok
                         end
                     end)
                 end
