@@ -151,7 +151,7 @@ defmodule ExMake.Lib do
     cache file does not exist. In other words, an `on_load` function should avoid
     having side-effects beyond setting variables in the environment table.
     """
-    defmacro on_load(args1_arg, args2_arg, [do: block]) do
+    defmacro on_load(args1_arg \\ (quote do: _), args2_arg \\ (quote do: _), [do: block]) do
         args1_arg = Macro.escape(args1_arg)
         args2_arg = Macro.escape(args2_arg)
         block = Macro.escape(block)
