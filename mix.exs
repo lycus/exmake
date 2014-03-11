@@ -17,7 +17,7 @@ defmodule ExMake.Mixfile do
          escript_path: Path.join(["_build", "shared", "lib",
                                   "exmake", "ebin", "exmake"]),
          escript_emu_args: args]
-     end
+    end
 
     def application() do
         [applications: [],
