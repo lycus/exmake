@@ -3,9 +3,9 @@ defmodule ExMake.Application do
     This is the main entry point of the ExMake application.
     """
 
-    use Application.Behaviour
+    use Application
 
-    @app_version ExMake.Helpers.get_exmake_version()
+    require ExMake.Helpers
 
     @doc false
     @spec main([String.t()]) :: no_return()
@@ -19,7 +19,7 @@ defmodule ExMake.Application do
         if inv != [], do: System.halt(1)
 
         if opts[:version] do
-            ExMake.Logger.info("ExMake - #{@app_version}")
+            ExMake.Logger.info("ExMake - #{ExMake.Helpers.get_exmake_version()}")
             ExMake.Logger.info("Copyright (C) 2013 The Lycus Foundation")
             ExMake.Logger.info("Available under the terms of the MIT License")
             ExMake.Logger.info("")
@@ -52,13 +52,11 @@ defmodule ExMake.Application do
             System.halt(2)
         end
 
-        start()
-
         if Enum.empty?(rest), do: rest = ["all"]
 
-        cfg = ExMake.Config[targets: rest,
-                            options: opts,
-                            args: tail]
+        cfg = %ExMake.Config{targets: rest,
+                             options: opts,
+                             args: tail}
 
         ExMake.Coordinator.set_config(cfg)
         code = ExMake.Worker.work()
@@ -107,7 +105,7 @@ defmodule ExMake.Application do
     """
     @spec start() :: :ok
     def start() do
-        :ok = Application.Behaviour.start(:exmake)
+        :ok = Application.start(:exmake)
     end
 
     @doc """
@@ -115,7 +113,7 @@ defmodule ExMake.Application do
     """
     @spec stop() :: :ok
     def stop() do
-        :ok = :application.stop(:exmake)
+        :ok = Application.stop(:exmake)
     end
 
     @doc false

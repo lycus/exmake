@@ -1,6 +1,8 @@
 defmodule ExMake.Lib.Elixir do
     use ExMake.Lib
 
+    require ExMake.Helpers
+
     description "Support for the Elixir programming language."
     license "MIT License"
     version ExMake.Helpers.get_exmake_version_tuple()

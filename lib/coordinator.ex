@@ -4,7 +4,7 @@ defmodule ExMake.Coordinator do
     and kicks off job processes for recipes.
     """
 
-    use GenServer.Behaviour
+    use GenServer
 
     @typep request() :: {:set_cfg, ExMake.Config.t()} |
                         {:get_cfg} |
@@ -29,18 +29,7 @@ defmodule ExMake.Coordinator do
     @doc false
     @spec start_link() :: {:ok, pid()}
     def start_link() do
-        tup = {:ok, pid} = :gen_server.start_link(__MODULE__, ExMake.State[], [])
-        Process.register(pid, :exmake_coordinator)
-        tup
-    end
-
-    @doc """
-    Locates the coordinator process. Returns the PID if found; otherwise,
-    returns `nil`.
-    """
-    @spec locate() :: pid() | nil
-    def locate() do
-        Process.whereis(:exmake_coordinator)
+        {:ok, _} = GenServer.start_link(__MODULE__, %ExMake.State{}, [name: :exmake_coordinator])
     end
 
     @doc """
@@ -52,7 +41,7 @@ defmodule ExMake.Coordinator do
     """
     @spec set_config(ExMake.Config.t(), timeout()) :: :ok
     def set_config(cfg, timeout \\ :infinity) do
-        :gen_server.call(locate(), {:set_cfg, cfg}, timeout)
+        GenServer.call(:exmake_coordinator, {:set_cfg, cfg}, timeout)
         :ok
     end
 
@@ -65,7 +54,7 @@ defmodule ExMake.Coordinator do
     """
     @spec get_config(timeout()) :: ExMake.Config.t() | nil
     def get_config(timeout \\ :infinity) do
-        {:get_cfg, cfg} = :gen_server.call(locate(), {:get_cfg}, timeout)
+        {:get_cfg, cfg} = GenServer.call(:exmake_coordinator, {:get_cfg}, timeout)
         cfg
     end
 
@@ -90,7 +79,7 @@ defmodule ExMake.Coordinator do
     """
     @spec enqueue(Keyword.t(), term(), pid(), timeout()) :: :ok
     def enqueue(rule, data \\ nil, owner \\ self(), timeout \\ :infinity) do
-        :gen_server.call(locate(), {:enqueue, rule, data, owner}, timeout)
+        GenServer.call(:exmake_coordinator, {:enqueue, rule, data, owner}, timeout)
         :ok
     end
 
@@ -105,35 +94,35 @@ defmodule ExMake.Coordinator do
     """
     @spec apply_timer_fn(((ExMake.Timer.session()) -> ExMake.Timer.session()), timeout()) :: :ok
     def apply_timer_fn(fun, timeout \\ :infinity) do
-        :gen_server.call(locate(), {:apply_timer, fun}, timeout)
+        GenServer.call(:exmake_coordinator, {:apply_timer, fun}, timeout)
         :ok
     end
 
     @doc false
     @spec get_libraries(timeout()) :: [module()]
     def get_libraries(timeout \\ :infinity) do
-        {:get_libs, libs} = :gen_server.call(locate(), {:get_libs}, timeout)
+        {:get_libs, libs} = GenServer.call(:exmake_coordinator, {:get_libs}, timeout)
         libs
     end
 
     @doc false
     @spec add_library(module(), timeout()) :: :ok
     def add_library(module, timeout \\ :infinity) do
-        :gen_server.call(locate(), {:add_lib, module}, timeout)
+        GenServer.call(:exmake_coordinator, {:add_lib, module}, timeout)
         :ok
     end
 
     @doc false
     @spec remove_library(module(), timeout()) :: :ok
     def remove_library(module, timeout \\ :infinity) do
-        :gen_server.call(locate(), {:del_lib, module}, timeout)
+        GenServer.call(:exmake_coordinator, {:del_lib, module}, timeout)
         :ok
     end
 
     @doc false
     @spec clear_libraries(timeout()) :: :ok
     def clear_libraries(timeout \\ :infinity) do
-        :gen_server.call(locate(), {:clear_libs}, timeout)
+        GenServer.call(:exmake_coordinator, {:clear_libs}, timeout)
         :ok
     end
 
@@ -142,49 +131,51 @@ defmodule ExMake.Coordinator do
     def handle_call(msg, {sender, _}, state) do
         reply = case msg do
             {:set_cfg, cfg} ->
-                state = state.config(cfg).max_jobs(cfg.options[:jobs] || 1)
+                state = %ExMake.State{state | :config => cfg,
+                                              :max_jobs => cfg.options[:jobs] || 1}
                 {:set_cfg}
             {:get_cfg} ->
-                {:get_cfg, state.config()}
+                {:get_cfg, state.config}
             {:enqueue, rule, data, owner} ->
-                if Set.size(state.jobs()) < state.max_jobs() do
+                if Set.size(state.jobs) < state.max_jobs do
                     # If we have a free job slot, just run it right away.
-                    job = ExMake.Runner.start(self(), rule, data, owner)
-                    state = state.jobs(Set.put(state.jobs(), {rule, data, owner, job}))
+                    job = ExMake.Runner.start(rule, data, owner)
+                    state = %ExMake.State{state | :jobs => Set.put(state.jobs, {rule, data, owner, job})}
                 else
                     # No free slot, so schedule the job for later. We'll run it
                     # once we get a :done message from some other job.
-                    state = state.queue(:queue.in({rule, data, owner}, state.queue()))
+                    state = %ExMake.State{state | :queue => :queue.in({rule, data, owner}, state.queue)}
                 end
 
                 {:enqueue}
             {:done, rule, data, owner, result} ->
-                state = state.jobs(Set.delete(state.jobs(), {rule, data, owner, sender}))
+                state = %ExMake.State{state | :jobs => Set.delete(state.jobs, {rule, data, owner, sender})}
 
                 send(owner, {:exmake_done, rule, data, result})
 
                 # We have a free job slot, so run a job if one is enqueued.
-                case :queue.out(state.queue()) do
+                case :queue.out(state.queue) do
                     {{:value, {rule, data, owner}}, queue} ->
-                        job = ExMake.Runner.start(self(), rule, data, owner)
-                        state = state.queue(queue).jobs(Set.put(state.jobs(), {rule, data, owner, job}))
+                        job = ExMake.Runner.start(rule, data, owner)
+                        state = %ExMake.State{state | :queue => queue,
+                                                      :jobs => Set.put(state.jobs, {rule, data, owner, job})}
                     {:empty, _} -> :ok
                 end
 
                 {:done}
             {:apply_timer, fun} ->
-                state = state.timing(fun.(state.timing()))
+                state = %ExMake.State{state | :timing => fun.(state.timing)}
                 {:apply_timer}
             {:get_libs} ->
-                {:get_libs, Set.to_list(state.libraries())}
+                {:get_libs, Set.to_list(state.libraries)}
             {:add_lib, lib} ->
-                state = state.libraries(Set.put(state.libraries(), lib))
+                state = %ExMake.State{state | :libraries => Set.put(state.libraries, lib)}
                 {:add_lib}
             {:del_lib, lib} ->
-                state = state.libraries(Set.delete(state.libraries(), lib))
+                state = %ExMake.State{state | :libraries => Set.delete(state.libraries, lib)}
                 {:del_lib}
             {:clear_libs} ->
-                state = state.libraries(HashSet.new())
+                state = %ExMake.State{state | :libraries => HashSet.new()}
                 {:clear_libs}
         end
 

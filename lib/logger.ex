@@ -12,17 +12,17 @@ defmodule ExMake.Logger do
     `0`, colored output will be disabled.
     """
 
-    @spec colorize(String.t(), String.t()) :: String.t()
+    @spec colorize(String.t(), IO.ANSI.ansicode()) :: String.t()
     defp colorize(str, color) do
-        emit = IO.ANSI.terminal?() && :application.get_env(:exmake, :exmake_event_pid) == :undefined && System.get_env("EXMAKE_COLORS") != "0"
-        IO.ANSI.escape_fragment("%{#{color}, bright}#{str}%{reset}", emit)
+        emit = IO.ANSI.enabled?() && Application.get_env(:exmake, :exmake_event_pid) == :undefined && System.get_env("EXMAKE_COLORS") != "0"
+        IO.ANSI.format([color, :bright, str], emit) |> IO.iodata_to_binary()
     end
 
     @spec output(String.t()) :: :ok
     defp output(str) do
-        _ = case :application.get_env(:exmake, :exmake_event_pid) do
-            {:ok, pid} -> send(pid, {:exmake_stdout, str <> "\n"})
-            :undefined -> IO.puts(str)
+        _ = case Application.get_env(:exmake, :exmake_event_pid) do
+            nil -> IO.puts(str)
+            pid -> send(pid, {:exmake_stdout, str <> "\n"})
         end
 
         :ok
@@ -37,13 +37,13 @@ defmodule ExMake.Logger do
     @doc false
     @spec warn(String.t()) :: :ok
     def warn(str) do
-        output(colorize("Warning:", "yellow") <> " " <> colorize(str, "white"))
+        output(colorize("Warning:", :yellow) <> " " <> colorize(str, :white))
     end
 
     @doc false
     @spec error(String.t()) :: :ok
     def error(prefix \\ "Error", str) do
-        output(colorize(prefix <> ":", "red") <> " " <> colorize(str, "white"))
+        output(colorize(prefix <> ":", :red) <> " " <> colorize(str, :white))
     end
 
     @doc """
@@ -66,7 +66,7 @@ defmodule ExMake.Logger do
     """
     @spec log_note(String.t()) :: :ok
     def log_note(str) do
-        if ExMake.Coordinator.get_config().options()[:loud], do: output(colorize(str, "green"))
+        if ExMake.Coordinator.get_config().options()[:loud], do: output(colorize(str, :green))
 
         :ok
     end
@@ -92,7 +92,7 @@ defmodule ExMake.Logger do
     """
     @spec log_result(String.t()) :: :ok
     def log_result(str) do
-        if ExMake.Coordinator.get_config().options()[:loud], do: output(colorize(str, "cyan"))
+        if ExMake.Coordinator.get_config().options()[:loud], do: output(colorize(str, :cyan))
 
         :ok
     end
@@ -106,7 +106,7 @@ defmodule ExMake.Logger do
     @spec log_debug(String.t()) :: :ok
     def log_debug(str) do
         if System.get_env("EXMAKE_DEBUG") == "1" do
-            output(colorize("Debug:", "magenta") <> " " <> colorize(str, "white"))
+            output(colorize("Debug:", :magenta) <> " " <> colorize(str, :white))
         end
 
         :ok

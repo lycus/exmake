@@ -1,7 +1,5 @@
 ExUnit.start()
 
-ExMake.Application.start()
-
 defmodule ExMake.Test.Case do
     use ExUnit.CaseTemplate
 
@@ -50,9 +48,9 @@ defmodule ExMake.Test.Case do
 
             :application.set_env(:exmake, :exmake_event_pid, self())
 
-            cfg = ExMake.Config[targets: rest,
-                                options: opts,
-                                args: tail]
+            cfg = %ExMake.Config{targets: rest,
+                                 options: opts,
+                                 args: tail}
 
             ExMake.Coordinator.set_config(cfg)
             ExMake.Worker.work()

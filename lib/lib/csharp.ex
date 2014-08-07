@@ -1,6 +1,8 @@
 defmodule ExMake.Lib.CSharp do
     use ExMake.Lib
 
+    require ExMake.Helpers
+
     description "Support for the C# programming language."
     license "MIT License"
     version ExMake.Helpers.get_exmake_version_tuple()
@@ -62,8 +64,8 @@ defmodule ExMake.Lib.CSharp do
                 not_srcs = (@exm_csharp_opts[:net_modules] || []) |>
                            Enum.concat(if k = @exm_csharp_opts[:key_file], do: [k], else: []) |>
                            Enum.map(fn(x) -> Path.join(dir, x) end)
-                srcs = HashSet.new(srcs) |>
-                       Set.difference(HashSet.new(not_srcs)) |>
+                srcs = Enum.into(srcs, HashSet.new()) |>
+                       Set.difference(Enum.into(not_srcs, HashSet.new())) |>
                        Set.to_list() |>
                        Enum.join(" ")
                 mods = (@exm_csharp_opts[:net_modules] || []) |>

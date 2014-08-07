@@ -4,12 +4,12 @@ defmodule ExMake.Helpers do
     @spec last_modified(Path.t()) :: :file.date_time()
     def last_modified(path) do
         case File.stat(path) do
-            {:ok, File.Stat[mtime: mtime]} -> mtime
+            {:ok, %File.Stat{mtime: mtime}} -> mtime
             {:error, _} -> {{1970, 1, 1}, {0, 0, 0}}
         end
     end
 
-    @spec get_target(digraph(), Path.t()) :: {:digraph.vertex(), Keyword.t()} | nil
+    @spec get_target(:digraph.graph(), Path.t()) :: {:digraph.vertex(), Keyword.t()} | nil
     def get_target(graph, target) do
         Enum.find_value(:digraph.vertices(graph), fn(v) ->
             {_, r} = :digraph.vertex(graph, v)
@@ -31,19 +31,18 @@ defmodule ExMake.Helpers do
     end
 
     @doc false
-    @spec get_exmake_version() :: String.t()
-    def get_exmake_version() do
-        if Enum.all?(:application.which_applications(), fn({a, _, _}) -> a != :mix end) do
-            Mix.loadpaths()
-        end
+    defmacro get_exmake_version() do
+        ver = String.strip(File.read!("VERSION"))
 
-        Mix.project()[:version]
+        quote do
+            unquote(ver)
+        end
     end
 
     @spec get_exmake_version_tuple() :: {non_neg_integer(), non_neg_integer(), non_neg_integer()}
     def get_exmake_version_tuple() do
         {:ok, ver} = Version.parse(get_exmake_version())
 
-        {ver.major(), ver.minor(), ver.patch()}
+        {ver.major, ver.minor, ver.patch}
     end
 end

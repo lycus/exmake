@@ -24,33 +24,33 @@ defmodule ExMake.Loader do
         rescue
             ex in [Code.LoadError] ->
                 raise(ExMake.LoadError,
-                      [file: file,
+                      [message: "#{p}: Could not load file",
+                       file: file,
                        directory: dir,
-                       error: ex,
-                       description: "#{p}: Could not load file"])
+                       error: ex])
             ex in [CompileError] ->
                 raise(ExMake.LoadError,
-                      [file: file,
+                      [message: Exception.message(ex),
+                       file: file,
                        directory: dir,
-                       error: ex,
-                       description: ex.message()])
+                       error: ex])
         end
 
-        cnt = Enum.count(list, fn({x, _}) -> atom_to_binary(x) |> String.ends_with?(".Exmakefile") end)
+        cnt = Enum.count(list, fn({x, _}) -> Atom.to_string(x) |> String.ends_with?(".Exmakefile") end)
 
         cond do
             cnt == 0 ->
                 raise(ExMake.LoadError,
-                      [file: file,
+                      [message: "#{p}: No module ending in '.Exmakefile' defined",
+                       file: file,
                        directory: dir,
-                       error: nil,
-                       description: "#{p}: No module ending in '.Exmakefile' defined"])
+                       error: nil])
             cnt > 1 ->
                 raise(ExMake.LoadError,
-                      [file: file,
+                      [message: "#{p}: #{cnt} modules ending in '.Exmakefile' defined",
+                       file: file,
                        directory: dir,
-                       error: nil,
-                       description: "#{p}: #{cnt} modules ending in '.Exmakefile' defined"])
+                       error: nil])
             true -> :ok
         end
 
@@ -59,11 +59,11 @@ defmodule ExMake.Loader do
 
         Enum.each(rec, fn({sub, file}) ->
             if !String.valid?(sub) do
-                raise(ExMake.ScriptError, [description: "Subdirectory path must be a string"])
+                raise(ExMake.ScriptError, [message: "Subdirectory path must be a string"])
             end
 
             if !String.valid?(file) do
-                raise(ExMake.ScriptError, [description: "Subdirectory file must be a string"])
+                raise(ExMake.ScriptError, [message: "Subdirectory file must be a string"])
             end
         end)
 

@@ -40,10 +40,10 @@ defmodule ExMake.Utils do
             ExMake.Logger.log_note(cmd)
         end
 
-        port = Port.open({:spawn, String.to_char_list!(cmd)}, [:binary,
-                                                               :exit_status,
-                                                               :hide,
-                                                               :stderr_to_stdout])
+        port = Port.open({:spawn, String.to_char_list(cmd)}, [:binary,
+                                                              :exit_status,
+                                                              :hide,
+                                                              :stderr_to_stdout])
 
         recv = fn(recv, port, acc) ->
             receive do
@@ -55,8 +55,11 @@ defmodule ExMake.Utils do
         {text, code} = recv.(recv, port, "")
 
         if code != 0 && !ignore do
+            out = if String.strip(text) != "", do: "\n#{text}", else: ""
+
             raise(ExMake.ShellError,
-                  [command: cmd,
+                  [message: "Command '#{cmd}' exited with code: #{code}#{out}",
+                   command: cmd,
                    output: text,
                    exit_code: code])
         end
@@ -109,9 +112,9 @@ defmodule ExMake.Utils do
         names = if is_list(name), do: name, else: [name]
 
         exe = Enum.find_value(names, fn(name) ->
-            case :os.find_executable(String.to_char_list!(name)) do
+            case :os.find_executable(String.to_char_list(name)) do
                 false -> nil
-                path -> String.from_char_list!(path)
+                path -> List.to_string(path)
             end
         end)
 
@@ -120,7 +123,7 @@ defmodule ExMake.Utils do
         if !exe && !ignore do
             list = Enum.join(Enum.map(names, fn(s) -> "'#{s}'" end), ", ")
 
-            raise(ExMake.ScriptError, [description: "Could not locate program #{list}#{var_desc}"])
+            raise(ExMake.ScriptError, [message: "Could not locate program #{list}#{var_desc}"])
         end
 
         if !silent do
@@ -143,6 +146,6 @@ defmodule ExMake.Utils do
     """
     @spec format(String.t(), [term()]) :: String.t()
     def format(str, args) do
-        :io_lib.format(str, args) |> iolist_to_binary()
+        :io_lib.format(str, args) |> IO.iodata_to_binary()
     end
 end

@@ -1,6 +1,8 @@
 defmodule ExMake.Lib.Host do
     use ExMake.Lib
 
+    require ExMake.Helpers
+
     description "Host operating system and architecture detection."
     license "MIT License"
     version ExMake.Helpers.get_exmake_version_tuple()
@@ -40,7 +42,7 @@ defmodule ExMake.Lib.Host do
         put("HOST_FORMAT", fmt)
 
         sys_arch = :erlang.system_info(:system_architecture) |>
-                   String.from_char_list!() |>
+                   List.to_string() |>
                    String.split("-") |>
                    Enum.fetch!(0)
 
@@ -49,23 +51,23 @@ defmodule ExMake.Lib.Host do
         # http://wiki.debian.org/Multiarch/Tuples
         # TODO: There are more than these in the wild.
         arch = cond do
-            re.(%r/^aarch64(_eb)?$/) -> "aarch64"
-            re.(%r/^alpha$/) -> "alpha"
-            re.(%r/^arm(eb)?$/) -> "arm"
-            re.(%r/^hppa$/) -> "hppa"
-            re.(%r/^i386$/) -> "i386"
-            re.(%r/^ia64$/) -> "ia64"
-            re.(%r/^m68k$/) -> "m68k"
-            re.(%r/^mips(el)?$/) -> "mips"
-            re.(%r/^mips64(el)?$/) -> "mips64"
-            re.(%r/^powerpc$/) -> "ppc"
-            re.(%r/^ppc64$/) -> "ppc64"
-            re.(%r/^s390$/) -> "s390"
-            re.(%r/^s390x$/) -> "s390x"
-            re.(%r/^sh4$/) -> "sh4"
-            re.(%r/^sparc$/) -> "sparc"
-            re.(%r/^sparc64$/) -> "sparc64"
-            re.(%r/^x86_64$/) -> "amd64"
+            re.(~r/^aarch64(_eb)?$/) -> "aarch64"
+            re.(~r/^alpha$/) -> "alpha"
+            re.(~r/^arm(eb)?$/) -> "arm"
+            re.(~r/^hppa$/) -> "hppa"
+            re.(~r/^i386$/) -> "i386"
+            re.(~r/^ia64$/) -> "ia64"
+            re.(~r/^m68k$/) -> "m68k"
+            re.(~r/^mips(el)?$/) -> "mips"
+            re.(~r/^mips64(el)?$/) -> "mips64"
+            re.(~r/^powerpc$/) -> "ppc"
+            re.(~r/^ppc64$/) -> "ppc64"
+            re.(~r/^s390$/) -> "s390"
+            re.(~r/^s390x$/) -> "s390x"
+            re.(~r/^sh4$/) -> "sh4"
+            re.(~r/^sparc$/) -> "sparc"
+            re.(~r/^sparc64$/) -> "sparc64"
+            re.(~r/^x86_64$/) -> "amd64"
             true ->
                 ExMake.Logger.log_warn("Unknown host architecture '#{sys_arch}'")
 
@@ -75,9 +77,9 @@ defmodule ExMake.Lib.Host do
         ExMake.Logger.log_result("Host architecture: #{arch}")
         put("HOST_ARCH", arch)
 
-        endian = case <<1234 :: [size(32), native()]>> do
-            <<1234 :: [size(32), big()]>> -> "big"
-            <<1234 :: [size(32), little()]>> -> "little"
+        endian = case <<1234 :: size(32) - native()>> do
+            <<1234 :: size(32) - big()>> -> "big"
+            <<1234 :: size(32) - little()>> -> "little"
         end
 
         ExMake.Logger.log_result("Host endianness: #{endian}")

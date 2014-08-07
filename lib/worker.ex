@@ -4,23 +4,12 @@ defmodule ExMake.Worker do
     the exit code for the execution. Can be supervised by an OTP supervisor.
     """
 
-    use GenServer.Behaviour
+    use GenServer
 
     @doc false
     @spec start_link() :: {:ok, pid()}
     def start_link() do
-        tup = {:ok, pid} = :gen_server.start_link(__MODULE__, nil, [])
-        Process.register(pid, :exmake_worker)
-        tup
-    end
-
-    @doc """
-    Locates the worker process. Returns the PID if found; otherwise,
-    returns `nil`.
-    """
-    @spec locate() :: pid() | nil
-    def locate() do
-        Process.whereis(:exmake_worker)
+        {:ok, _} = GenServer.start_link(__MODULE__, nil, [name: :exmake_worker])
     end
 
     @doc """
@@ -34,11 +23,11 @@ defmodule ExMake.Worker do
     """
     @spec work(timeout()) :: non_neg_integer()
     def work(timeout \\ :infinity) do
-        code = :gen_server.call(locate(), :work, timeout)
+        code = GenServer.call(:exmake_worker, :work, timeout)
 
-        _ = case :application.get_env(:exmake, :exmake_event_pid) do
-            {:ok, pid} -> send(pid, {:exmake_shutdown, code})
-            :undefined -> :ok
+        _ = case Application.get_env(:exmake, :exmake_event_pid) do
+            nil -> :ok
+            pid -> send(pid, {:exmake_shutdown, code})
         end
 
         code
@@ -51,7 +40,7 @@ defmodule ExMake.Worker do
 
         cfg = ExMake.Coordinator.get_config()
 
-        if cfg.options()[:time] do
+        if cfg.options[:time] do
             ExMake.Coordinator.apply_timer_fn(fn(_) -> ExMake.Timer.create_session("ExMake Build Process") end)
 
             pass_go = fn(p) -> ExMake.Coordinator.apply_timer_fn(fn(s) -> ExMake.Timer.start_pass(s, p) end) end
@@ -62,7 +51,7 @@ defmodule ExMake.Worker do
             pass_end = fn(_) -> end
         end
 
-        file = cfg.options()[:file] || "Exmakefile"
+        file = cfg.options[:file] || "Exmakefile"
 
         Process.put(:exmake_jobs, 0)
 
@@ -77,7 +66,7 @@ defmodule ExMake.Worker do
 
             # Slight optimization: If we're clearing the
             # cache, then it's definitely stale.
-            stale = if cfg.options()[:clear] do
+            stale = if cfg.options[:clear] do
                 pass_go.("Clear Build Cache")
 
                 ExMake.Cache.clear_cache()
@@ -107,7 +96,7 @@ defmodule ExMake.Worker do
 
                     Enum.each(vars, fn({k, v}) -> if !System.get_env(k), do: System.put_env(k, v) end)
 
-                    if cfg.args() == [], do: ExMake.Coordinator.set_config(cfg = cfg.args(args))
+                    if cfg.args == [], do: ExMake.Coordinator.set_config(%ExMake.Config{cfg | :args => args})
 
                     pass_end.("Load Configuration Cache")
                 end
@@ -157,7 +146,7 @@ defmodule ExMake.Worker do
                        Enum.map(fn(v) -> {v, System.get_env(v)} end) |>
                        Enum.filter(fn({_, v}) -> v end)
 
-                ExMake.Cache.save_config(cfg.args(), vars)
+                ExMake.Cache.save_config(cfg.args, vars)
 
                 pass_end.("Save Configuration Cache")
 
@@ -166,7 +155,7 @@ defmodule ExMake.Worker do
                 manifest_files = Enum.concat(Enum.map(mods, fn({d, _, m, _}) ->
                     Enum.map(m.__exmake__(:manifest), fn(file) ->
                         if !String.valid?(file) do
-                            raise(ExMake.ScriptError, [description: "Manifest file must be a string"])
+                            raise(ExMake.ScriptError, [message: "Manifest file must be a string"])
                         end
 
                         Path.join(d, file)
@@ -212,7 +201,7 @@ defmodule ExMake.Worker do
                 {g, f}
             end
 
-            tgts = Enum.map(cfg.targets(), fn(tgt) ->
+            tgts = Enum.map(cfg.targets, fn(tgt) ->
                 pass_go.("Locate Vertex (#{tgt})")
 
                 rule = ExMake.Helpers.get_target(g, tgt)
@@ -234,7 +223,7 @@ defmodule ExMake.Worker do
                     end
                 end)
 
-                raise(ExMake.UsageError, [description: "Target '#{elem(bad, 0)}' not found"])
+                raise(ExMake.UsageError, [message: "Target '#{elem(bad, 0)}' not found"])
             end
 
             # Now create pruned graphs for each target and process them.
@@ -254,7 +243,7 @@ defmodule ExMake.Worker do
 
                 # Process leaves until the graph is empty. If we're running
                 # in --question mode, only check staleness of files.
-                if cfg.options()[:question] do
+                if cfg.options[:question] do
                     process_graph_question(tgt, g2, pass_go, pass_end)
                 else
                     pass_go.("Prepare DAG (#{tgt})")
@@ -272,7 +261,7 @@ defmodule ExMake.Worker do
                 end
             end)
 
-            if cfg.options()[:time] do
+            if cfg.options[:time] do
                 ExMake.Coordinator.apply_timer_fn(fn(session) ->
                     ExMake.Logger.info(ExMake.Timer.format_session(ExMake.Timer.finish_session(session)))
 
@@ -287,7 +276,7 @@ defmodule ExMake.Worker do
                 # that a rule has stale targets. So simply return 1.
                 1
             ex ->
-                ExMake.Logger.error(inspect(elem(ex, 0)), ex.message())
+                ExMake.Logger.error(inspect(ex.__struct__()), Exception.message(ex))
                 ExMake.Logger.log_debug(Exception.format_stacktrace(System.stacktrace()))
 
                 # Wait for all remaining jobs to stop.
@@ -309,7 +298,7 @@ defmodule ExMake.Worker do
         {:reply, code, nil}
     end
 
-    @spec construct_graph([{Path.t(), Path.t(), module()}, ...], ((atom()) -> :ok), ((atom()) -> :ok)) :: digraph()
+    @spec construct_graph([{Path.t(), Path.t(), module()}, ...], ((atom()) -> :ok), ((atom()) -> :ok)) :: :digraph.graph()
     defp construct_graph(mods, pass_go, pass_end) do
         pass_go.("Check Rule Specifications")
 
@@ -320,11 +309,11 @@ defmodule ExMake.Worker do
                 loc = "#{Path.join(d, f)}:#{elem(spec[:recipe], 2)}"
 
                 if !is_list(tgts) || Enum.any?(tgts, fn(t) -> !String.valid?(t) end) do
-                    raise(ExMake.ScriptError, [description: "#{loc}: Invalid target list; must be a list of strings"])
+                    raise(ExMake.ScriptError, [message: "#{loc}: Invalid target list; must be a list of strings"])
                 end
 
                 if !is_list(srcs) || Enum.any?(srcs, fn(s) -> !String.valid?(s) end) do
-                    raise(ExMake.ScriptError, [description: "#{loc}: Invalid source list; must be a list of strings"])
+                    raise(ExMake.ScriptError, [message: "#{loc}: Invalid source list; must be a list of strings"])
                 end
             end)
 
@@ -334,11 +323,11 @@ defmodule ExMake.Worker do
                 loc = "#{Path.join(d, f)}:#{elem(spec[:recipe], 2)}"
 
                 if !String.valid?(name) do
-                    raise(ExMake.ScriptError, [description: "#{loc}: Invalid task name; must be a string"])
+                    raise(ExMake.ScriptError, [message: "#{loc}: Invalid task name; must be a string"])
                 end
 
                 if !is_list(srcs) || Enum.any?(srcs, fn(s) -> !is_binary(s) || !String.valid?(s) end) do
-                    raise(ExMake.ScriptError, [description: "#{loc}: Invalid source list; must be a list of strings"])
+                    raise(ExMake.ScriptError, [message: "#{loc}: Invalid source list; must be a list of strings"])
                 end
             end)
         end)
@@ -381,7 +370,7 @@ defmodule ExMake.Worker do
 
         target_names = Enum.reduce(target_names, HashSet.new(), fn(n, set) ->
             if Set.member?(set, n) do
-                raise(ExMake.ScriptError, [description: "Multiple rules mention target '#{n}'"])
+                raise(ExMake.ScriptError, [message: "Multiple rules mention target '#{n}'"])
             end
 
             Set.put(set, n)
@@ -395,7 +384,7 @@ defmodule ExMake.Worker do
             n = p[:name]
 
             if Set.member?(target_names, n) do
-                raise(ExMake.ScriptError, [description: "Task name '#{n}' conflicts with a rule"])
+                raise(ExMake.ScriptError, [message: "Task name '#{n}' conflicts with a rule"])
             end
 
             Set.put(set, n)
@@ -406,7 +395,7 @@ defmodule ExMake.Worker do
         pass_go.("Determine Task Sources")
 
         tasks = Enum.map(tasks, fn(r) ->
-            srcs = Set.difference(HashSet.new(r[:sources]), task_names)
+            srcs = Set.difference(Enum.into(r[:sources], HashSet.new()), task_names)
 
             Keyword.put(r, :real_sources, srcs)
         end)
@@ -452,7 +441,7 @@ defmodule ExMake.Worker do
                     if r[:targets] && (n = r2[:name]) do
                         r = inspect(ExMake.Helpers.make_presentable(r))
 
-                        raise(ExMake.ScriptError, [description: "Rule #{r} depends on task '#{n}'"])
+                        raise(ExMake.ScriptError, [message: "Rule #{r} depends on task '#{n}'"])
                     end
 
                     case :digraph.add_edge(g, v, v2) do
@@ -463,7 +452,7 @@ defmodule ExMake.Worker do
                                        Enum.map(fn(x) -> inspect(x) end)
 
                             raise(ExMake.ScriptError,
-                                  [description: "Cyclic dependency detected between\n#{r1}\nand\n#{r2}"])
+                                  [message: "Cyclic dependency detected between\n#{r1}\nand\n#{r2}"])
                         _ -> :ok
                     end
                 end
@@ -475,7 +464,7 @@ defmodule ExMake.Worker do
         g
     end
 
-    @spec process_graph(String.t(), digraph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
+    @spec process_graph(String.t(), :digraph.graph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
     defp process_graph(target, graph, pass_go, pass_end, n \\ 0) do
         verts = :digraph.vertices(graph)
 
@@ -511,7 +500,8 @@ defmodule ExMake.Worker do
 
             {ex, v, rule} = receive do
                 {:exmake_done, r, v, :ok} -> {nil, v, r}
-                {:exmake_done, r, v, {:throw, val}} -> {ExMake.ThrowError[value: val], v, r}
+                {:exmake_done, r, v, {:throw, val}} ->
+                    {%ExMake.ThrowError{message: "Erlang term was thrown: #{inspect(val)}", value: val}, v, r}
                 {:exmake_done, r, v, {:raise, ex}} -> {ex, v, r}
             end
 
@@ -532,7 +522,7 @@ defmodule ExMake.Worker do
         end
     end
 
-    @spec process_graph_question(String.t(), digraph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
+    @spec process_graph_question(String.t(), :digraph.graph(), ((atom()) -> :ok), ((atom()) -> :ok), non_neg_integer()) :: :ok
     defp process_graph_question(target, graph, pass_go, pass_end, n \\ 0) do
         pass_go.("Compute Leaves (#{target} - #{n})")
 
@@ -553,7 +543,7 @@ defmodule ExMake.Worker do
             else
                 Enum.each(r[:sources], fn(src) ->
                     if !File.exists?(src) do
-                        raise(ExMake.UsageError, [description: "No rule to make target '#{src}'"])
+                        raise(ExMake.UsageError, [message: "No rule to make target '#{src}'"])
                     end
                 end)
 
@@ -563,7 +553,8 @@ defmodule ExMake.Worker do
                 src_time > tgt_time
             end
 
-            if stale, do: raise(ExMake.StaleError, [rule: r])
+            if stale, do: raise(ExMake.StaleError, [message: "A rule has stale targets: #{r}",
+                                                    rule: r])
 
             :digraph.del_vertex(graph, v)
         end)

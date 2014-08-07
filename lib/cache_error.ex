@@ -1,20 +1,10 @@
-defexception ExMake.CacheError, description: "" do
+defmodule ExMake.CacheError do
     @moduledoc """
     The exception raised if something went wrong when saving
     or loading the cache.
-
-    `description` is the message presented to the user.
     """
 
-    record_type(description: String.t())
+    defexception [:message]
 
-    @doc """
-    Formats the exception in a user-presentable way.
-
-    `self` is the exception record.
-    """
-    @spec message(t()) :: String.t()
-    def message(self) do
-        self.description()
-    end
+    @type t() :: %ExMake.CacheError{message: String.t()}
 end

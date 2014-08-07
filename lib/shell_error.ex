@@ -1,6 +1,4 @@
-defexception ExMake.ShellError, command: "",
-                                output: "",
-                                exit_code: 0 do
+defmodule ExMake.ShellError do
     @moduledoc """
     The exception raised by `ExMake.Utils.shell/2` if a program does not
     exit with an exit code of zero.
@@ -10,19 +8,13 @@ defexception ExMake.ShellError, command: "",
     contains the exit code of the program.
     """
 
-    record_type(command: String.t(),
-                output: String.t(),
-                exit_code: integer())
+    defexception [:message,
+                  :command,
+                  :output,
+                  :exit_code]
 
-    @doc """
-    Formats the exception in a user-presentable way.
-
-    `self` is the exception record.
-    """
-    @spec message(t()) :: String.t()
-    def message(self) do
-        out = if String.strip(s = self.output()) != "", do: "\n#{s}", else: ""
-
-        "Command '#{self.command()}' exited with code: #{self.exit_code()}#{out}"
-    end
+    @type t() :: %ExMake.ShellError{message: String.t(),
+                                    command: String.t(),
+                                    output: String.t(),
+                                    exit_code: integer()}
 end

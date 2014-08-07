@@ -1,6 +1,8 @@
 defmodule ExMake.Lib.FSharp do
     use ExMake.Lib
 
+    require ExMake.Helpers
+
     description "Support for the F# programming language."
     license "MIT License"
     version ExMake.Helpers.get_exmake_version_tuple()

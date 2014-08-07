@@ -13,7 +13,7 @@ all: $(_build)/exmake
 escript: $(_build)/exmake
 
 $(_build)/exmake: $(_build)/exmake.app
-	@$(MIX) escriptize
+	@$(MIX) escript.build
 
 ebin: $(_build)/exmake.app
 

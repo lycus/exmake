@@ -134,7 +134,7 @@ defmodule ExMake.File do
         quote do: @exmake_manifest unquote(file)
     end
 
-    @doc %S"""
+    @doc ~S"""
     Specifies a directory to recurse into.
 
     Example:
@@ -182,7 +182,7 @@ defmodule ExMake.File do
         quote do: @exmake_subdirectories {unquote(dir), unquote(file)}
     end
 
-    @doc %S"""
+    @doc ~S"""
     Defines a rule.
 
     Example:
@@ -229,7 +229,7 @@ defmodule ExMake.File do
         end
     end
 
-    @doc %S"""
+    @doc ~S"""
     Defines a task.
 
     Example:
@@ -293,7 +293,7 @@ defmodule ExMake.File do
         end
     end
 
-    @doc %S"""
+    @doc ~S"""
     Defines a fallback task.
 
     Example:

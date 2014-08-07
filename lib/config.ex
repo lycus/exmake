@@ -1,6 +1,4 @@
-defrecord ExMake.Config, targets: [],
-                         options: [],
-                         args: [] do
+defmodule ExMake.Config do
     @moduledoc """
     Represents the configuration for an invocation of ExMake.
 
@@ -20,7 +18,11 @@ defrecord ExMake.Config, targets: [],
     * `clear`: Boolean value indicating whther to clear the graph and environment cache.
     """
 
-    record_type(targets: [String.t(), ...],
-                options: Keyword.t(),
-                args: [String.t()])
+    defstruct targets: [],
+              options: [],
+              args: []
+
+    @type t() :: %ExMake.Config{targets: [String.t(), ...],
+                                options: Keyword.t(),
+                                args: [String.t()]}
 end

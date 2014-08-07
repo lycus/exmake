@@ -99,8 +99,8 @@ defmodule ExMake.Env do
 
         if !is_list(list) do
             raise(ExMake.EnvError,
-                  [name: name,
-                   description: "Value for key '#{name}' is not a list - cannot append element"])
+                  [message: "Value for key '#{name}' is not a list - cannot append element",
+                   name: name])
         end
 
         :ets.insert(tab, {name, list ++ [value]})
@@ -125,8 +125,8 @@ defmodule ExMake.Env do
 
         if !is_list(list) do
             raise(ExMake.EnvError,
-                  [name: name,
-                   description: "Value for key '#{name}' is not a list - cannot prepend element"])
+                  [message: "Value for key '#{name}' is not a list - cannot prepend element",
+                   name: name])
         end
 
         :ets.insert(tab, {name, [value | list]})
@@ -148,8 +148,8 @@ defmodule ExMake.Env do
             [{_, list}] ->
                 if !is_list(list) do
                     raise(ExMake.EnvError,
-                          [name: name,
-                           description: "Value for key '#{name}' is not a list - cannot retrieve"])
+                          [message: "Value for key '#{name}' is not a list - cannot retrieve",
+                           name: name])
                 end
 
                 list
@@ -174,8 +174,8 @@ defmodule ExMake.Env do
 
         if !is_list(list) do
             raise(ExMake.EnvError,
-                  [name: name,
-                   description: "Value for key '#{name}' is not a list - cannot delete element"])
+                  [message: "Value for key '#{name}' is not a list - cannot delete element",
+                   name: name])
         end
 
         list = Enum.reject(list, fn(e) -> if is_binary(value), do: e == value, else: e =~ value end)

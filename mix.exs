@@ -2,21 +2,13 @@ defmodule ExMake.Mixfile do
     use Mix.Project
 
     def project() do
-        args = Enum.join(["%%!",
-                          "-noshell",
-                          "-noinput",
-                          "+B",
-                          "-spp true",
-                          "\n"],
-                         " ")
-
         [app: :exmake,
-         version: "0.3.2",
+         version: String.strip(File.read!("VERSION")),
+         elixir: "~> 0.15.0",
          build_per_environment: false,
-         escript_main_module: ExMake.Application,
-         escript_path: Path.join(["_build", "shared", "lib",
-                                  "exmake", "ebin", "exmake"]),
-         escript_emu_args: args]
+         escript: [main_module: ExMake.Application,
+                   path: Path.join(["_build", "shared", "lib", "exmake", "ebin", "exmake"]),
+                   emu_args: "-noshell -noinput +B -spp true"]]
     end
 
     def application() do

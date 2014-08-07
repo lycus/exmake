@@ -1,8 +1,8 @@
 defmodule ExMake.Runner do
     @moduledoc false
 
-    @spec start(pid(), Keyword.t(), term(), pid()) :: pid()
-    def start(coordinator, rule, data, owner) do
+    @spec start(Keyword.t(), term(), pid()) :: pid()
+    def start(rule, data, owner) do
         spawn(fn() ->
             result = try do
                 {run, args} = cond do
@@ -10,7 +10,7 @@ defmodule ExMake.Runner do
                     rule[:name] ->
                         Enum.each(rule[:real_sources], fn(src) ->
                             if !File.exists?(src) do
-                                raise(ExMake.UsageError, [description: "No rule to make target '#{src}'"])
+                                raise(ExMake.UsageError, [message: "No rule to make target '#{src}'"])
                             end
                         end)
 
@@ -19,7 +19,7 @@ defmodule ExMake.Runner do
                     rule[:targets] ->
                         Enum.each(rule[:sources], fn(src) ->
                             if !File.exists?(src) do
-                                raise(ExMake.UsageError, [description: "No rule to make target '#{src}'"])
+                                raise(ExMake.UsageError, [message: "No rule to make target '#{src}'"])
                             end
                         end)
 
@@ -43,7 +43,7 @@ defmodule ExMake.Runner do
                         r = inspect(ExMake.Helpers.make_presentable(rule))
 
                         raise(ExMake.ScriptError,
-                              [description: "Recipe for rule #{r} changed directory from '#{cwd}' to '#{ncwd}'"])
+                              [message: "Recipe for rule #{r} changed directory from '#{cwd}' to '#{ncwd}'"])
                     end
 
                     if tgts = rule[:targets] do
@@ -52,7 +52,7 @@ defmodule ExMake.Runner do
                                 r = inspect(ExMake.Helpers.make_presentable(rule))
 
                                 raise(ExMake.ScriptError,
-                                      [description: "Recipe for rule #{r} did not produce #{tgt} as expected"])
+                                      [message: "Recipe for rule #{r} did not produce #{tgt} as expected"])
                             end
                         end)
                     end
@@ -75,7 +75,7 @@ defmodule ExMake.Runner do
                 result = Tuple.delete_at(result, 2)
             end
 
-            :gen_server.call(coordinator, {:done, rule, data, owner, result}, :infinity)
+            GenServer.call(:exmake_coordinator, {:done, rule, data, owner, result}, :infinity)
         end)
     end
 end

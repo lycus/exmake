@@ -50,7 +50,7 @@ defmodule ExMake.Timer do
     @spec finish_session(session()) :: finished_session()
     def finish_session(session) do
         {title, time, n, passes} = session
-        pairs = lc {n, {i, t}} inlist Dict.to_list(passes), do: {i, n, t, t / time * 100}
+        pairs = for {n, {i, t}} <- Dict.to_list(passes), do: {i, n, t, t / time * 100}
         {title, pairs ++ [{n + 1, "Total", time, 100.0}]}
     end
 
@@ -69,7 +69,7 @@ defmodule ExMake.Timer do
         head2 = "        Time                                          Percent    Name"
         sep2 = "        --------------------------------------------- ---------- -------------------------------"
 
-        passes = lc {_, name, time, perc} inlist Enum.sort(passes) do
+        passes = for {_, name, time, perc} <- Enum.sort(passes) do
             msecs = div(time, 1000)
             secs = div(msecs, 1000)
             mins = div(secs, 60)

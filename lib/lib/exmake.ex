@@ -1,6 +1,8 @@
 defmodule ExMake.Lib.ExMake do
     use ExMake.Lib
 
+    require ExMake.Helpers
+
     description "Support for building ExMake libraries."
     license "MIT License"
     version ExMake.Helpers.get_exmake_version_tuple()
@@ -24,7 +26,7 @@ defmodule ExMake.Lib.ExMake do
                 output_dir = if s = @exm_exmake_opts[:output_dir], do: Path.join(dir, s), else: Path.dirname(src)
 
                 Enum.each(Code.compile_string(File.read!(src), src), fn({mod, code}) ->
-                    File.write!(Path.join(output_dir, atom_to_binary(mod) <> ".beam"), code)
+                    File.write!(Path.join(output_dir, Atom.to_string(mod) <> ".beam"), code)
                 end)
             end
         end

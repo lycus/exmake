@@ -68,6 +68,6 @@ defmodule ExMake.Test.LoadTest do
         {t, c} = execute_in(p)
 
         assert c == 1
-        assert t =~ %r/ExMake.LoadError: .*Exmakefile:4: undefined function a\/0/
+        assert t =~ ~r/ExMake.LoadError: .*Exmakefile:4: undefined function a\/0/
     end
 end
