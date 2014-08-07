@@ -20,7 +20,7 @@ defmodule ExMake.Application do
 
         if opts[:version] do
             ExMake.Logger.info("ExMake - #{ExMake.Helpers.get_exmake_version()}")
-            ExMake.Logger.info("Copyright (C) 2013 The Lycus Foundation")
+            ExMake.Logger.info(ExMake.Helpers.get_exmake_license())
             ExMake.Logger.info("Available under the terms of the MIT License")
             ExMake.Logger.info("")
         end

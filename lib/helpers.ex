@@ -45,4 +45,17 @@ defmodule ExMake.Helpers do
 
         {ver.major, ver.minor, ver.patch}
     end
+
+    @doc false
+    defmacro get_exmake_license() do
+        lic = File.stream!("LICENSE") |>
+              Stream.drop(8) |>
+              Enum.take(1) |>
+              hd() |>
+              String.strip()
+
+        quote do
+            unquote(lic)
+        end
+    end
 end
