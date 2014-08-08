@@ -30,7 +30,6 @@ defmodule ExMake.Helpers do
         Keyword.delete(:real_sources)
     end
 
-    @doc false
     defmacro get_exmake_version() do
         ver = String.strip(File.read!("VERSION"))
 
@@ -46,7 +45,6 @@ defmodule ExMake.Helpers do
         {ver.major, ver.minor, ver.patch}
     end
 
-    @doc false
     defmacro get_exmake_license() do
         lic = File.stream!("LICENSE") |>
               Stream.drop(8) |>
