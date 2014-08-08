@@ -14,7 +14,7 @@ defmodule ExMake.Logger do
 
     @spec colorize(String.t(), IO.ANSI.ansicode()) :: String.t()
     defp colorize(str, color) do
-        emit = IO.ANSI.enabled?() && Application.get_env(:exmake, :exmake_event_pid) == :undefined && System.get_env("EXMAKE_COLORS") != "0"
+        emit = IO.ANSI.enabled?() && Application.get_env(:exmake, :exmake_event_pid) == nil && System.get_env("EXMAKE_COLORS") != "0"
         IO.ANSI.format([color, :bright, str], emit) |> IO.iodata_to_binary()
     end
 
