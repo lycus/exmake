@@ -4,7 +4,7 @@ defmodule ExMake.Mixfile do
     def project() do
         [app: :exmake,
          version: String.strip(File.read!("VERSION")),
-         elixir: "~> 0.15.0",
+         elixir: "~> 1.0.2",
          build_per_environment: false,
          escript: [main_module: ExMake.Application,
                    path: Path.join(["_build", "shared", "lib", "exmake", "ebin", "exmake"]),
